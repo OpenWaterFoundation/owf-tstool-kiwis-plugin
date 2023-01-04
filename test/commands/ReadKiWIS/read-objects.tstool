@@ -1,0 +1,70 @@
+StartLog(LogFile="results/read-objects.tstool.log")
+# Read KiWIS objects so that business objects can be understood.
+#
+# Catchment list:
+# - make sure to request format=objson
+WebGet(URI="https://data.northernwater.org/KiWIS/KiWIS?datasource=0&service=kisters&type=queryServices&request=getCatchmentList&datasource=0&format=objson",LocalFile="results/CatchmentList.json")
+NewObject(ObjectID="CatchmentList",InputFile="results\CatchmentList.json")
+#
+# Group list:
+# - make sure to request format=objson
+WebGet(URI="https://data.northernwater.org/KiWIS/KiWIS?datasource=0&service=kisters&type=queryServices&request=getGroupList&datasource=0&format=objson",LocalFile="results/GroupList.json")
+NewObject(ObjectID="GroupList",InputFile="results\GroupList.json")
+#
+# Parameter list:
+# - make sure to request format=objson
+WebGet(URI="https://data.northernwater.org/KiWIS/KiWIS?datasource=0&service=kisters&type=queryServices&request=getParameterList&datasource=0&format=objson",LocalFile="results/ParameterList.json")
+NewObject(ObjectID="ParameterList",InputFile="results\ParameterList.json")
+#
+# Parameter type list:
+# - make sure to request format=objson
+WebGet(URI="https://data.northernwater.org/KiWIS/KiWIS?datasource=0&service=kisters&type=queryServices&request=getParameterTypeList&datasource=0&format=objson",LocalFile="results/ParameterTypeList.json")
+NewObject(ObjectID="ParameterTypeList",InputFile="results\ParameterTypeList.json")
+#
+# Quality codes
+WebGet(URI="https://data.northernwater.org/KiWIS/KiWIS?datasource=0&service=kisters&type=queryServices&request=getQualityCodes&datasource=0&format=json",LocalFile="results/QualityCodes.json")
+NewObject(ObjectID="QualityCodes",InputFile="results\QualityCodes.json")
+#
+# River list:
+# - make sure to request format=objson
+WebGet(URI="https://data.northernwater.org/KiWIS/KiWIS?datasource=0&service=kisters&type=queryServices&request=getRiverList&datasource=0&format=objson",LocalFile="results/RiverList.json")
+NewObject(ObjectID="RiverList",InputFile="results\RiverList.json")
+#
+# Site list:
+# - make sure to request format=objson
+WebGet(URI="https://data.northernwater.org/KiWIS/KiWIS?datasource=0&service=kisters&type=queryServices&request=getSiteList&datasource=0&format=objson",LocalFile="results/SiteList.json")
+NewObject(ObjectID="SiteList",InputFile="results\SiteList.json")
+#
+# Standard remark type list:
+# - make sure to request format=objson
+WebGet(URI="https://data.northernwater.org/KiWIS/KiWIS?datasource=0&service=kisters&type=queryServices&request=getStandardRemarkTypeList&datasource=0&format=json",LocalFile="results/StandardRemarkTypeList.json")
+NewObject(ObjectID="StandardRemarkTypeList",InputFile="results\StandardRemarkTypeList.json")
+#
+# Station list:
+# - make sure to request format=objson
+WebGet(URI="https://data.northernwater.org/KiWIS/KiWIS?datasource=0&service=kisters&type=queryServices&request=getStationList&datasource=0&format=objson",LocalFile="results/StationList.json")
+NewObject(ObjectID="StationList",InputFile="results\StationList.json")
+#
+# Time series list:
+# - make sure to request format=objson
+# - must specify one or more filters
+WebGet(URI="https://data.northernwater.org/KiWIS/KiWIS?datasource=0&service=kisters&type=queryServices&request=getTimeseriesList&datasource=0&format=objson",LocalFile="results/TimeSeriesList.json")
+NewObject(ObjectID="TimeSeriesList",InputFile="results\TimeSeriesList.json")
+WebGet(URI="https://data.northernwater.org/KiWIS/KiWIS?datasource=0&service=kisters&type=queryServices&request=getTimeseriesList&datasource=0&format=objson&station_id=18583",LocalFile="results/TimeSeriesList-station_id-18583.json")
+NewObject(ObjectID="TimeSeriesList",InputFile="results\TimeSeriesList-station_id-18583.json")
+#
+# Time series type list:
+# - make sure to request format=objson
+# - must specify one or more filters
+WebGet(URI="https://data.northernwater.org/KiWIS/KiWIS?datasource=0&service=kisters&type=queryServices&request=getTimeseriesTypeList&datasource=0&format=objson",LocalFile="results/TimeSeriesTypeList.json")
+NewObject(ObjectID="TimeSeriesTypeList",InputFile="results\TimeSeriesTypeList.json")
+WebGet(URI="https://data.northernwater.org/KiWIS/KiWIS?datasource=0&service=kisters&type=queryServices&request=getTimeseriesTypeList&datasource=0&format=objson&station_id=18583",LocalFile="results/TimeSeriesTypeList-station_id-18583.json")
+NewObject(ObjectID="TimeSeriesTypeList",InputFile="results\TimeSeriesTypeList-station_id-18583.json")
+#
+# Time series values:
+# - make sure to request format=dajson
+# - must specify a ts_id
+# WebGet(URI="https://data.northernwater.org/KiWIS/KiWIS?datasource=0&service=kisters&type=queryServices&request=getTimeseriesValues&datasource=0&format=dajson&ts_id=957010",LocalFile="results/TimeSeriesValues-ts_id-957010.json")
+# NewObject(ObjectID="TimeSeriesValues",InputFile="results\TimeSeriesValues-ts_id-957010.json")
+WebGet(URI="https://data.northernwater.org/KiWIS/KiWIS?datasource=0&service=kisters&type=queryServices&request=getTimeseriesValues&datasource=0&format=csv&ts_id=957010",LocalFile="results/TimeSeriesValues-ts_id-957010.csv")
+NewObject(ObjectID="TimeSeriesValues",InputFile="results\TimeSeriesValues-ts_id-957010.csv")

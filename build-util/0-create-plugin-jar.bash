@@ -122,7 +122,7 @@ getPluginVersion() {
     # Don't echo error to stdout.
     echoStderr "Source file with version does not exist:"
     echoStderr "  ${srcFile}"
-    cat ""
+    exit 1
   fi
 }
 
