@@ -182,14 +182,32 @@ The following limitations and design issues have been identified during developm
         For example, it is generally useful to round the current time to an even interval.
     5.  Graphing irregular interval time series will result in lines being drawing over gaps
         whereas lines will not be drawn over gaps for regular interval time series.
-6.  **Root URL**:
+    6.  TSTool assigns data at the timestamp for irregular data.
+        Regular interval data are assigned at the timestamp and are for timestamp-ending interval.
+        For exampample, the `ts_spacing=P1D`) timestamp is at the midnight timestamp ending the data accumulation.
+        **Additional work may be needed to understand how KiWIS handles dates compared to times.**
+6.  **Time period**:
+    1.  The KiWIS web services seem to return extra data depending on the requested period.
+        Perhaps internally the period is always rounded to day or some other precision?
+7.  **Timestamp**:
+    1.  Need to better understand how the timestamp should be handled for day and larger interval.
+    2.  The KiWIS web services `getTimeseriesValues` service returns date and time even for daily or larger interval
+        (e.g., `2022-04-22T00:00:00-07:00`).
+    3.  For a `ts_spacing` of `P1D`, should the date be handled as `2022-04-22 (discard the time)?
+    4.  If the time series is treated as an irregular interval,
+        the resulting timestamp would position the value at midnight of the day,
+        but hour zero of a day can cause a perceived shift of one day.
+8.  **Time zone**:
+    1.  The plugin currently does not convert time zones.
+        Time series perod and data values use times read from data.
+9.  **Root URL**:
     1.  The datastore configuration file `ServiceRootURI` property currently specifies only the main server path
         and `?service=kisters&type=queryServices&datasource=0` is automatically added.
     2.  If this is not correct for all systems, the software may need to be updated to allow specifying
         these query parameters in the configuration file.
         The main question is probably about `datasource` (what does that mean)?
         **Will probably fix this before the production release.**
-7.  **Quality code:**:
+10. **Quality code:**:
     1.  The `KiWIS Quality Code` field returned by the `getTimeseriesValues` service is an integer
         that must be converted to text using output from the `getQualityCodes` service.
         An integer is returned by the `getTimeseriesValues` service and the
@@ -199,7 +217,7 @@ The following limitations and design issues have been identified during developm
         This is more of an issue if other available data value flags are implemented in the future.
     3.  A quick review of some data shows that historical data has a flag of `Provisional`.
         The WISKI data should be reviewed to change the code to indicate validated data.
-8.  **Time series manipulation:**
+11. **Time series manipulation:**
     1.  The KiWIS `getTimeseriesValues` service is quite complex and allows returning many fields
         and performing manipulations on the time series, such as aggregating and filling.
         Similar manipulations are provided by TSTool commands.
@@ -211,7 +229,7 @@ The following limitations and design issues have been identified during developm
         additional work is needed to ensure that TSTool's representation of the time series is correct,
         such as the data type, interval, etc.
         Issues like the blank `ts_spacing` discussed above may impact more advanced features.
-9.  **Caching:**
+12. **Caching:**
     1.  TSTool performance, in particular interactive features, is impacted by web service query times.
         Therefore, it is desirable to cache data in memory so that software does not need to requery web services.
         The trade-off is that when data are cached, changes in the WISKI database will not be visible in the TSTool

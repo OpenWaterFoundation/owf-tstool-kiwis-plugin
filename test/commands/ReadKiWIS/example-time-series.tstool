@@ -1,0 +1,10 @@
+# Several KiWIS examples for Northern Water's system:
+# - tests have also been defined
+#
+# First time series listed in the UI, read with TSID and ReadKiWIS command.
+NW220.KiWIS.rhum_vais_Avg-'Cmd.Final'.~KiWIS-northern
+ReadKiWIS(DataStore="KiWIS-northern",DataType="rhum_vais_Avg",Interval="*",LocId="NW220",TsShortName="Cmd.Final")
+#
+# Only Depth time series read with ReadKiWIS as single time series and 1+ time series.
+ReadKiWIS(DataStore="KiWIS-northern",DataType="Depth",Interval="*",LocId="SC-0042",TsShortName="Final_USGS")
+ReadKiWIS(DataStore="KiWIS-northern",DataType="Depth",Interval="*",Where1="station_no;Matches;SC-0042")

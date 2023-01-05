@@ -77,7 +77,7 @@ public class TimeSeriesCatalog {
 	private Integer parameterTypeId = null;
 	private String parameterTypeName = "";
 	
-	// Catchment data.
+	// Catchment.
 	private Integer catchmentId = null;
 	private String catchmentName = "";
 	private String catchmentNo = "";
@@ -534,6 +534,8 @@ public class TimeSeriesCatalog {
 	
 	public void setStationNo ( String stationNo ) {
 		this.stationNo = stationNo;
+		// Also set the location ID to the same.
+		this.setLocId(stationNo);
 	}
 	
 	public void setStationParameterLongName ( String stationParameterLongName ) {

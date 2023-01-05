@@ -122,14 +122,16 @@ echo '<style>
 <body>
 <h1>Open Water Foundation TSTool KiWIS Plugin Software Downloads</h1>
 <p>
-The TSTool KiWIS Plugin software is available for Windows. Cygwin and Linux versions can be created if requested or use the Windows files on Linux.
+The TSTool Kisters WISKI (KiWIS) Plugin software is available for Windows.
+The same installer can also be installed on Linux.
 </p>
 <p>
 <ul>
 <li> It is recommended to use the latest plugin version with the latest TSTool version:
      <ul>
      <li> Use the TSTool <b>Help / About TSTool</b> menu to check the TSTool version.</li>
-     <li> Check the plugin install files in the user'\''s <code>.tstool/NN/plugins</code> folder to check the plugin version.</li>
+     <li> Use the TSTool <b>View / Datastores</b> menu to check the plugin version.</li>
+     <li> Also check the plugin install files in the user'\''s <code>.tstool/NN/plugins</code> folder to check the plugin version.</li>
      </ul></li>
 <li> See the latest <a href="https://software.openwaterfoundation.org/tstool-kiwis-plugin/latest/doc-user/appendix-install/install/">TSTool KiWIS Plugin installation documentation</a>
      for installation information (or follow a link below for specific version documentation).</li>
@@ -154,8 +156,9 @@ The TSTool KiWIS Plugin software is available for Windows. Cygwin and Linux vers
   createIndexHtmlFile_Table win
 
 echo '<h2>Linux Download</h2>
-<p>Linux versions of the TSTool KiWIS Plugin are currently not actively developed.
-Contact OWF if if a Linux release of the plugin is needed.</p>
+<p>Linux versions of the TSTool KiWIS Plugin are not actively developed.
+The windows plugin can be installed on Linux.</p>
+Contact OWF if additional help is needed.</p>
 
 <hr>' >> ${indexHtmlTmpFile}
 
@@ -280,6 +283,8 @@ getCloudFrontDistribution() {
   subdomain="software.openwaterfoundation.org"
   cloudFrontDistributionId=$(${awsExe} cloudfront list-distributions --output text --profile "${awsProfile}" | grep ${subdomain} | grep "arn:" | awk '{print $2}' | cut -d ':' -f 6 | cut -d '/' -f 2)
   logInfo "CloudFront distribution ID = ${cloudFrontDistributionId}"
+  # Echo so that calling code can set to a variable.
+  echo ${cloudFrontDistributionId}
 }
 
 # Get the user's login.
@@ -554,10 +559,12 @@ uploadIndexFiles() {
   logInfo "Invalidating files so that CloudFront will make new files available..."
   logInfo "  Save output to: ${tmpFile}"
   # TODO smalers 2022-06-08 for some reason index.html does not work so have to use index.html*
+  #${awsExe} cloudfront create-invalidation --distribution-id ${cloudFrontDistributionId} --paths "/tstool-kiwis-plugin" --profile "${awsProfile}"
   #${awsExe} cloudfront create-invalidation --distribution-id ${cloudFrontDistributionId} --paths "/tstool-kiwis-plugin/index.html*" "/tstool-kiwis-plugin/" "/tstool-kiwis-plugin" --profile "${awsProfile}"
   #${awsExe} cloudfront create-invalidation --distribution-id ${cloudFrontDistributionId} --paths "/tstool-kiwis-plugin/index.html*" --profile "${awsProfile}"
-  ${awsExe} cloudfront create-invalidation --distribution-id "${cloudFrontDistributionId}" --paths '/tstool-kiwis-plugin/index*' --output json --profile "${awsProfile}" | tee ${tmpFile}
-  #${awsExe} cloudfront create-invalidation --distribution-id ${cloudFrontDistributionId} --paths "/tstool-kiwis-plugin" --profile "${awsProfile}"
+  #${awsExe} cloudfront create-invalidation --distribution-id "${cloudFrontDistributionId}" --paths '/tstool-kiwis-plugin/index*' --output json --profile "${awsProfile}" | tee ${tmpFile}
+  logInfo "Running: ${awsExe} cloudfront create-invalidation --distribution-id \"${cloudFrontDistributionId}\" --paths '/tstool-kiwis-plugin/' '/tstool-kiwis-plugin/index.html' --output json --profile \"${awsProfile}\""
+  ${awsExe} cloudfront create-invalidation --distribution-id "${cloudFrontDistributionId}" --paths '/tstool-kiwis-plugin' '/tstool-kiwis-plugin/index.html*' --output json --profile "${awsProfile}" | tee ${tmpFile}
   invalidationId=$(cat ${tmpFile} | grep '"Id":' | cut -d ':' -f 2 | tr -d ' ' | tr -d '"' | tr -d ',')
   errorCode=${PIPESTATUS[0]}
   if [ ${errorCode} -ne 0 ]; then

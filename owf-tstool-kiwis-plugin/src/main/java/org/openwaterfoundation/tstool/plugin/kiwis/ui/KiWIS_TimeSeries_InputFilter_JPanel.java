@@ -30,6 +30,7 @@ import org.openwaterfoundation.tstool.plugin.kiwis.dao.TimeSeriesCatalog;
 import org.openwaterfoundation.tstool.plugin.kiwis.datastore.KiWISDataStore;
 
 import RTi.Util.GUI.InputFilter;
+import RTi.Util.GUI.InputFilterCriterionType;
 import RTi.Util.GUI.InputFilter_JPanel;
 import RTi.Util.Message.Message;
 import RTi.Util.String.StringUtil;
@@ -72,34 +73,13 @@ public class KiWIS_TimeSeries_InputFilter_JPanel extends InputFilter_JPanel {
 
 	/**
 	Set the filter data.  This method is called at setup and when refreshing the list with a new subject type.
+	For all cases, use the InputFilter constructor "whereLabelPersistent" to ensure that the TSTool ReadKiWIS command
+	will show a nice 
 	*/
 	public void setFilters ( int numFilterGroups ) {
 		String routine = getClass().getSimpleName() + ".setFilters";
 		
 		// Read the data to populate filter choices.
-		
-		/*
-		List<Site> sites = new ArrayList<>();
-		try {
-			sites = this.datastore.getSiteList();
-		}
-		catch ( IOException e ) {
-			Message.printWarning(2, routine, "Exception reading the KiWIS site list");
-			Message.printWarning(2, routine, e);
-		}
-		*/
-
-		/*
-		List<Station> stations = new ArrayList<>();
-		try {
-			// A new station list is read.
-			stations = this.datastore.getStationList();
-		}
-		catch ( IOException e ) {
-			Message.printWarning(2, routine, "Exception reading the KiWIS station list");
-			Message.printWarning(2, routine, e);
-		}
-		*/
 
 		List<TimeSeriesCatalog> tscatalogList = new ArrayList<>();
 		try {
@@ -243,85 +223,55 @@ public class KiWIS_TimeSeries_InputFilter_JPanel extends InputFilter_JPanel {
 	    }
 
 	    Collections.sort(stationIdChoices,String.CASE_INSENSITIVE_ORDER);
-	    filters.add(new InputFilter("Station - ID",
-	        "station_id", "stationId",
-	        StringUtil.TYPE_INTEGER, stationIdChoices, stationIdChoices, false));
+	    InputFilter filter = new InputFilter("Station - ID",
+	        "station_id", "stationId", "station_id",
+	        StringUtil.TYPE_INTEGER, stationIdChoices, stationIdChoices, false);
+	    filter.removeConstraint(InputFilterCriterionType.INPUT_GREATER_THAN.toString());
+	    filter.removeConstraint(InputFilterCriterionType.INPUT_GREATER_THAN_OR_EQUAL_TO.toString());
+	    filter.removeConstraint(InputFilterCriterionType.INPUT_LESS_THAN.toString());
+	    filter.removeConstraint(InputFilterCriterionType.INPUT_LESS_THAN_OR_EQUAL_TO.toString());
+	    filters.add(filter);
 
 	    Collections.sort(stationNameChoices,String.CASE_INSENSITIVE_ORDER);
 	    filters.add(new InputFilter("Station - Name",
-            "station_name", "stationName",
+            "station_name", "stationName", "station_name",
             StringUtil.TYPE_STRING, stationNameChoices, stationNameChoices, true));
 
-	    Collections.sort(stationNameChoices,String.CASE_INSENSITIVE_ORDER);
+	    Collections.sort(stationNoChoices,String.CASE_INSENSITIVE_ORDER);
 	    filters.add(new InputFilter("Station - Number",
-            "station_no", "stationNo",
+            "station_no", "stationNo", "station_no",
             StringUtil.TYPE_STRING, stationNoChoices, stationNoChoices, true));
 
 	    Collections.sort(stationParameterNameChoices,String.CASE_INSENSITIVE_ORDER);
 	    filters.add(new InputFilter("Station Parameter - Name",
-            "stationparameter_name", "stationParameterName",
+            "stationparameter_name", "stationParameterName", "stationparameter_name",
             StringUtil.TYPE_STRING, stationParameterNameChoices, stationParameterNameChoices, true));
 
-	    Collections.sort(stationIdChoices,String.CASE_INSENSITIVE_ORDER);
-	    filters.add(new InputFilter("Time series - ID",
-	        "ts_id", "tsId",
-	        StringUtil.TYPE_INTEGER, tsIdChoices, tsIdChoices, false));
+	    Collections.sort(tsIdChoices,String.CASE_INSENSITIVE_ORDER);
+	    filter = new InputFilter("Time series - ID",
+	        "ts_id", "tsId", "ts_id",
+	        StringUtil.TYPE_INTEGER, tsIdChoices, tsIdChoices, false);
+	    filter.removeConstraint(InputFilterCriterionType.INPUT_GREATER_THAN.toString());
+	    filter.removeConstraint(InputFilterCriterionType.INPUT_GREATER_THAN_OR_EQUAL_TO.toString());
+	    filter.removeConstraint(InputFilterCriterionType.INPUT_LESS_THAN.toString());
+	    filter.removeConstraint(InputFilterCriterionType.INPUT_LESS_THAN_OR_EQUAL_TO.toString());
+	    filters.add(filter);
 
-	    Collections.sort(stationNameChoices,String.CASE_INSENSITIVE_ORDER);
+	    Collections.sort(tsNameChoices,String.CASE_INSENSITIVE_ORDER);
 	    filters.add(new InputFilter("Time series - Name",
-            "ts_name", "tsName",
+            "ts_name", "tsName", "ts_name",
             StringUtil.TYPE_STRING, tsNameChoices, tsNameChoices, true));
 
-	    Collections.sort(stationNameChoices,String.CASE_INSENSITIVE_ORDER);
+	    Collections.sort(tsPathChoices,String.CASE_INSENSITIVE_ORDER);
 	    filters.add(new InputFilter("Time series - Path",
-            "ts_path", "tsPath",
+            "ts_path", "tsPath", "ts_path",
             StringUtil.TYPE_STRING, tsPathChoices, tsPathChoices, true));
 
-	    Collections.sort(stationNameChoices,String.CASE_INSENSITIVE_ORDER);
+	    Collections.sort(tsShortNameChoices,String.CASE_INSENSITIVE_ORDER);
 	    filters.add(new InputFilter("Time series - Name (short)",
-            "ts_shortname", "tsShortName",
+            "ts_shortname", "tsShortName", "ts_shortname",
             StringUtil.TYPE_STRING, tsShortNameChoices, tsShortNameChoices, true));
 
-	    /* TODO smalers 2023-01-02 this code may not match time series list values:
-	     * - remove later if the above code tests out
-	    // Station data.
-
-	    // For now force to pick from list:
-	    // - TODO smalers 2020-12-25 allow text field when can test
-	    List<String> stationIdChoices = new ArrayList<>();
-	    for ( Station station : stations ) {
-	    	if ( !station.getStationId().equals("*") ) {
-	    		stationIdChoices.add("" + station.getStationId());
-	    	}
-	    }
-	    Collections.sort(stationIdChoices,String.CASE_INSENSITIVE_ORDER);
-	    filters.add(new InputFilter("Station - ID",
-	        "station_id", "stationId",
-	        StringUtil.TYPE_INTEGER, stationIdChoices, stationIdChoices, false));
-
-	    List<String> stationNameChoices = new ArrayList<>();
-	    for ( Station station : stations ) {
-	    	if ( !station.getStationName().equals("*") ) {
-	    		stationNameChoices.add("" + station.getStationName());
-	    	}
-	    }
-	    Collections.sort(stationNameChoices,String.CASE_INSENSITIVE_ORDER);
-	    filters.add(new InputFilter("Station - Name",
-            "station_name", "stationName",
-            StringUtil.TYPE_STRING, stationNameChoices, stationNameChoices, true));
-
-	    List<String> stationNoChoices = new ArrayList<>();
-	    for ( Station station : stations ) {
-	    	if ( !station.getStationNo().equals("*") ) {
-	    		stationNoChoices.add("" + station.getStationNo());
-	    	}
-	    }
-	    Collections.sort(stationNameChoices,String.CASE_INSENSITIVE_ORDER);
-	    filters.add(new InputFilter("Station - Number",
-            "station_no", "stationNo",
-            StringUtil.TYPE_STRING, stationNoChoices, stationNoChoices, true));
-            */
-	    
 	  	setToolTipText("<html>Specify one or more input filters to limit query, will be ANDed.</html>");
 	    
 	    int numVisible = 14;

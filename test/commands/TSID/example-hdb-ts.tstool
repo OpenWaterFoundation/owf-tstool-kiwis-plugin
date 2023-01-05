@@ -1,0 +1,32 @@
+# Example of HDB time series retrieved from WISKI:
+# - HDB SDIs on left and WiSKI ts_id in the brackets
+# - not sure what the second number in the brackets is
+# - the comments on the right are from HDB? and do not exactly match WiSKI station names
+#
+# 100838 => ['27038010','1'], #Handy Ditch (HANDITCO)
+# 103382 => ['28720010','0'], #East Inlet near Grand Lake (EASINLET)
+# 104673 => ['28433010','0'], #Colorado River Below KB Ditch (COLKBDCO)
+# 103385 => ['28740010','0'], #Colorado River Near Grand Lake North Fork (COLGRAND)
+# 104675 => ['30061010','0'], #Colorado River Near Hot Sulphur Springs (COLSULCO)
+# 104674 => ['28416010','0'], #Colorado River Near Parshall (COLPARCO)
+# 103388 => ['27775010','0'], #Hansen Feeder Canal Loveland Turnout (HFCLOVCO)
+# 103389 => ['28706010','0'], #Willow Creek above Willow Creek Reservoir (WILABVCO)
+# 103381 => ['28758010','0'], #North Inlet near Grand Lake (NORINLET)
+SetInputPeriod(InputStart="CurrentToMinute - 60day",InputEnd="CurrentToMinute")
+# ts_id=27038010, Handy ditch (not found or is it disabled for the season?)
+# ts_id=28720010, East Inlet upstr of Grand Lake
+FS-0020.KiWIS.Q-Final.~KiWIS-northern
+# ts_id=28433010, Colorado Riv dwnstr of KB Ditch
+M-0002.KiWIS.Q-Final.~KiWIS-northern
+# ts_id=28740010, Colorado Riv upstr Shadow Mountain Res
+M-0009.KiWIS.Q-Final.~KiWIS-northern
+# ts_id=30061010, Colorado Riv upstream of Hot Sulphur Springs
+M-0006.KiWIS.Q-Final.~KiWIS-northern
+# ts_id=28416010, Colorado Riv dwnstr Williams Fork confl-Parshall
+M-0005.KiWIS.Q-Final.~KiWIS-northern
+# ts_id=27775010, Boulder and Whiterock Ditch Turnout #1
+FS-0008.KiWIS.Q-Final.~KiWIS-northern
+# ts_id=28706010, Willow Crk, USGS Gage at C-Lazy-U
+FS-0093.KiWIS.Q-Final.~KiWIS-northern
+# ts_id=28758010, North Inlet upstr of Grand Lake
+FS-0046.KiWIS.Q-Final.~KiWIS-northern

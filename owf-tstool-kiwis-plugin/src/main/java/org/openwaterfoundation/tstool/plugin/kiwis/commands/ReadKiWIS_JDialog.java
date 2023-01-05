@@ -174,6 +174,7 @@ private void actionPerformedDataTypeSelected ( ) {
     // Populate the interval choices corresponding to the data type.
     populateIntervalChoices ( getSelectedDataStore() );
     populateLocIdChoices ( getSelectedDataStore() );
+    populateTsShortNameChoices ( getSelectedDataStore(), getSelectedDataType(), getSelectedLocId() );
 }
 
 /**
@@ -281,13 +282,21 @@ private void checkInput () {
 	if ( Interval.length() > 0 ) {
 		props.set ( "Interval", Interval );
 	}
+	String LocId = getSelectedLocId();
+	if ( LocId.length() > 0 ) {
+		props.set ( "LocId", LocId );
+	}
+	String TsShortName = __TsShortName_JComboBox.getSelected();
+	if ( TsShortName.length() > 0 ) {
+		props.set ( "TsShortName", TsShortName );
+	}
 	InputFilter_JPanel filterPanel = getVisibleInputFilterPanel();
 	int whereCount = 0; // Number of non-empty Where parameters specified.
 	if ( filterPanel != null ) {
     	for ( int i = 1; i <= filterPanel.getNumFilterGroups(); i++ ) {
     	    String where = getWhere ( i - 1 );
     	    // Blank where is something like: ";operator;"
-    	    if ( !where.isEmpty() && (where.charAt(0) != ';') && (where.charAt(where.length() - 1) != ';') ) {
+    	    if ( !where.isEmpty() && !where.startsWith(";") && !where.endsWith(";") ) {
     	    	++whereCount;
     	    }
     	    if ( where.length() > 0 ) {
@@ -497,7 +506,9 @@ private KiWIS_TimeSeries_InputFilter_JPanel getVisibleInputFilterPanel() {
             continue;
         }
         if ( panel.isVisible() ) {
-        	Message.printStatus(2,"","Visible filter panel name is \"" + panelName + "\"");
+        	if ( Message.isDebugOn ) {
+        		Message.printStatus(2,"","Visible filter panel name is \"" + panelName + "\"");
+        	}
             return panel;
         }
     }
@@ -515,7 +526,7 @@ private String getWhere ( int ifg ) {
 	KiWIS_TimeSeries_InputFilter_JPanel filterPanel = getVisibleInputFilterPanel();
     String where = "";
     if ( filterPanel != null ) {
-    	// Use the persistent value for where.
+    	// Use the internal value for the where to ensure integration.
         where = filterPanel.toString(ifg,delim,3).trim();
     }
 	return where;
@@ -587,7 +598,7 @@ private void initialize ( JFrame parent, ReadKiWIS_Command command ) {
     JGUIUtil.addComponent(main_JPanel, new JLabel ( "Data type:"),
 		0, ++y, 1, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.EAST);
 	__DataType_JComboBox = new SimpleJComboBox ( false );
-	__DataType_JComboBox.setToolTipText("Data types from KiWIS 'stationparameter_name'.");
+	__DataType_JComboBox.setToolTipText("Data types from KiWIS 'stationparameter_no', used in TSID data type.");
 	__DataType_JComboBox.setMaximumRowCount(20);
 	__DataType_JComboBox.addItemListener ( this );
         JGUIUtil.addComponent(main_JPanel, __DataType_JComboBox,
@@ -598,7 +609,7 @@ private void initialize ( JFrame parent, ReadKiWIS_Command command ) {
     JGUIUtil.addComponent(main_JPanel, new JLabel ("Data interval:"),
 		0, ++y, 1, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.EAST);
 	__Interval_JComboBox = new SimpleJComboBox ();
-	__Interval_JComboBox.setToolTipText("Data interval from KiWIS 'ts_spacing'.");
+	__Interval_JComboBox.setToolTipText("Data interval from KiWIS 'ts_spacing' converted to TSTool notation.");
 	__Interval_JComboBox.addItemListener ( this );
     JGUIUtil.addComponent(main_JPanel, __Interval_JComboBox,
 		1, y, 2, 1, 1, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
@@ -623,8 +634,10 @@ private void initialize ( JFrame parent, ReadKiWIS_Command command ) {
     	"A unique TSID is formed from the KiWIS station_no, data type (stationparameter_no), and ts_shortname."),
         0, ++ySingle, 7, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
     JGUIUtil.addComponent(singleTS_JPanel, new JLabel(
-    	"The data type and interval must be specified above (DO NOT USE *)."),
+    	"The data type and interval must be specified above (DO NOT USE * for data type)."),
         0, ++ySingle, 7, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+    JGUIUtil.addComponent(singleTS_JPanel, new JSeparator(SwingConstants.HORIZONTAL),
+        0, ++ySingle, 7, 1, 0, 0, insetsTLBR, GridBagConstraints.HORIZONTAL, GridBagConstraints.WEST);
 
     JGUIUtil.addComponent(singleTS_JPanel, new JLabel ( "Location ID:"),
         0, ++ySingle, 1, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.EAST);
@@ -650,7 +663,7 @@ private void initialize ( JFrame parent, ReadKiWIS_Command command ) {
     JGUIUtil.addComponent(singleTS_JPanel, new JLabel ( "Time series short name:"),
         0, ++ySingle, 1, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.EAST);
     __TsShortName_JComboBox = new SimpleJComboBox ( false );
-    __TsShortName_JComboBox.setToolTipText("Location identifier (station_no) to match.");
+    __TsShortName_JComboBox.setToolTipText("Time series short name (ts_shortname) to match, used in TSID data type.");
     __TsShortName_JComboBox.addItemListener ( this );
     JGUIUtil.addComponent(singleTS_JPanel, __TsShortName_JComboBox,
         1, ySingle, 2, 1, 1, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
@@ -679,6 +692,9 @@ private void initialize ( JFrame parent, ReadKiWIS_Command command ) {
     JGUIUtil.addComponent(__multipleTS_JPanel, new JLabel(
     	"The 'getTimeseriesList' service is called first and then each time series is read using 'getTimeseriesValues' service."),
         0, ++yMult, 7, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+    JGUIUtil.addComponent(__multipleTS_JPanel, new JSeparator(SwingConstants.HORIZONTAL),
+        0, ++yMult, 7, 1, 0, 0, insetsTLBR, GridBagConstraints.HORIZONTAL, GridBagConstraints.WEST);
+
     // Initialize all the filters (selection will be based on data store).
     initializeInputFilters ( __multipleTS_JPanel, ++yMult, dataStoreList );
 	
@@ -1116,6 +1132,7 @@ private void refresh () {
 	    if ( JGUIUtil.isSimpleJComboBoxItem( __LocId_JComboBox, LocId, JGUIUtil.NONE, null, null ) ) {
             //__LocId_JComboBox.select (index[0] );
             __LocId_JComboBox.select (LocId);
+            __tsInfo_JTabbedPane.setSelectedIndex(0);
         }
         else {
             Message.printStatus(2,routine,"LocId=\"" + LocId + "\" is not a choice.");
@@ -1138,6 +1155,7 @@ private void refresh () {
 	    if ( JGUIUtil.isSimpleJComboBoxItem( __TsShortName_JComboBox, TsShortName, JGUIUtil.NONE, null, null ) ) {
             //__TsShortName_JComboBox.select (index[0] );
             __TsShortName_JComboBox.select (TsShortName);
+            __tsInfo_JTabbedPane.setSelectedIndex(0);
         }
         else {
             Message.printStatus(2,routine,"TsShortName=\"" + TsShortName + "\" is not a choice.");
@@ -1165,7 +1183,7 @@ private void refresh () {
     		for ( int ifg = 0; ifg < nfg; ifg++ ) {
     			where = props.getValue ( "Where" + (ifg + 1) );
     			if ( (where != null) && (where.length() > 0) ) {
-    				// Set the filter...
+    				// Set the filter.
     				try {
     				    Message.printStatus(2,routine,"Setting filter Where" + (ifg + 1) + "=\"" + where + "\" from panel " + filterPanel );
     				    filterPanel.setInputFilter (ifg, where, filterDelim );
@@ -1175,10 +1193,14 @@ private void refresh () {
     					"Error setting where information using \"" + where + "\"" );
     					Message.printWarning ( 3, routine, e );
     				}
+    				if ( !where.startsWith(";") ) {
+    					// Select the tab.
+    					__tsInfo_JTabbedPane.setSelectedIndex(1);
+    				}
     			}
     		}
 		    // For some reason the values do not always show up so invalidate the component to force redraw.
-		    // TODO SAM 2016-08-20 This still does not work
+		    // TODO SAM 2016-08-20 This still does not work.
     		Message.printStatus(2,routine,"Revalidating component to force redraw.");
 		    filterPanel.revalidate();
 		    //filterPanel.repaint();
@@ -1223,14 +1245,6 @@ private void refresh () {
 		tsid.append ( Interval );
 	}
 	tsid.append ( "~" + getInputNameForTSID() );
-	/*
-	if ( LocId.equals("") // || DataSource.equals("") // Data source is optional now since does not help with identification.
-		|| (DataType == null) || DataType.equals("") ||
-	    (Interval == null) || Interval.equals("")) {
-	    // Not enough information so assume using the where filters.
-	    TSID = "";
-	}
-	*/
 	__TSID_JTextField.setText ( tsid.toString() );
 	// Regardless, reset the command from the fields.
 	props = new PropList ( __command.getCommandName() );
@@ -1253,10 +1267,11 @@ private void refresh () {
 	InputFilter_JPanel filterPanel = getVisibleInputFilterPanel();
 	if ( filterPanel != null ) {
     	int nfg = filterPanel.getNumFilterGroups();
-        Message.printStatus(2,routine,"Input filter panel has " + nfg + " filter groups.");
+        //Message.printStatus(2,routine,"Input filter panel has " + nfg + " filter groups.");
     	String where;
     	for ( int ifg = 0; ifg < nfg; ifg ++ ) {
-    		where = filterPanel.toString(ifg,filterDelim,1).trim();
+    		// Use the internal value for the where to ensure integration.
+    		where = filterPanel.toString(ifg,filterDelim,3).trim();
     		// Make sure there is a field that is being checked in a where clause:
     		// - otherwise, unset the where if blank
     		props.unSet("Where" + (ifg + 1) );
@@ -1264,17 +1279,17 @@ private void refresh () {
                 // FIXME SAM 2010-11-01 The following discards '=' in the quoted string.
                 //props.add ( "Where" + (ifg + 1) + "=" + where );
                 props.set ( "Where" + (ifg + 1), where );
-                Message.printStatus(2,routine,"Setting command parameter from visible input filter:  Where" +
-                    (ifg + 1) + "=\"" + where + "\"" );
+                //Message.printStatus(2,routine,"Setting command parameter from visible input filter:  Where" +
+                //    (ifg + 1) + "=\"" + where + "\"" );
     		}
     		else {
-                Message.printStatus(2,routine,"Visible input filter:  Where" + (ifg + 1) + " is set to blank, "
-               		+ "where=" + where + " where.length()=" + where.length() + " filterDelim=" + filterDelim );
+                //Message.printStatus(2,routine,"Visible input filter:  Where" + (ifg + 1) + " is set to blank, "
+               	//	+ "where=" + where + " where.length()=" + where.length() + " filterDelim=" + filterDelim );
     		}
     	}
 	}
 	else {
-		Message.printStatus(2, routine, "Visible input filter panel is null.");
+		//Message.printStatus(2, routine, "Visible input filter panel is null.");
 	}
 	props.add ( "Alias=" + Alias );
 	InputStart = __InputStart_JTextField.getText().trim();

@@ -1,0 +1,11 @@
+StartLog(LogFile="results/example-tslist-excel.tstool.log")
+# Example of reading a list of time series given an Excel file
+# - read a list of time series from an Excel file
+# - THIS COMMAND FILE DOES NOT WORK because KiWIS has empty/default interval
+#   and requesting and interval of IrregSecond does not align
+ReadTableFromExcel(TableID="StationList",InputFile="example-tslist.xlsx",Worksheet="KiWIS Import",ExcelColumnNames=FirstRowInRange)
+# Create a table column that joins stationparameter_no and ts_shortname.
+FormatTableString(TableID="StationList",InputColumns="KiWIS stationparameter_no,KiWIS ts_shortname",Format="%s-%s",OutputColumn="TSToolDataType")
+# Read the time series from the table input.
+SetInputPeriod(InputStart="CurrentToMinute - 60Day",InputEnd="CurrentToMinute")
+ReadTimeSeriesList(TableID="StationList",LocationColumn="KiWIS station_no",DataSource="KiWIS",DataTypeColumn="TSToolDataType",Interval="IrregSecond",DataStore="KiWIS-northern",Alias="%L-%T",IfNotFound=Warn)

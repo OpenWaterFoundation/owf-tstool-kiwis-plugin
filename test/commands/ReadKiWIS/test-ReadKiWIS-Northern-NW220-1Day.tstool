@@ -1,0 +1,13 @@
+# Test reading a KiWIS time series
+# - read a single daily time series
+# - set the period so that results are predictable
+# - use data from Northern Water system
+StartLog(LogFile="Results/test-ReadKiWIS-Northern-NW220-1Day.tstool.log")
+# Read the full period.
+SetInputPeriod(InputStart="2022-01-01",InputEnd="2022-01-15")
+ReadKiWIS(DataStore="KiWIS-northern",DataType="rhum_vais_Avg",Interval="*",LocId="NW220",TsShortName="Day.Mean")
+# Uncomment the following to write the expected results.
+# WriteDateValue(OutputFile="expected-results/test-ReadKiWIS-Northern-NW220-1Day-out.dv")
+WriteDateValue(OutputFile="results/test-ReadKiWIS-Northern-NW220-1Day-out.dv")
+# Compare the results with expected results.
+CompareFiles(InputFile1="expected-results/test-ReadKiWIS-Northern-NW220-1Day-out.dv",InputFile2="results/test-ReadKiWIS-Northern-NW220-1Day-out.dv",IfDifferent=Warn)

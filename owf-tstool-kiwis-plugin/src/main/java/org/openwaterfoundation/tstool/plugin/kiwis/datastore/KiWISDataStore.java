@@ -729,10 +729,12 @@ public class KiWISDataStore extends AbstractWebServiceDataStore implements DataS
 	 */
 	public List<String> getTsShortNameStrings ( String dataType, String locId ) {
 		String routine = getClass().getSimpleName() + "getTsShortNameStrings";
-		if ( ((dataType == null) || dataType.isEmpty() || dataType.equals("*")) && (locId == null) || locId.isEmpty() ) {
+		if ( ((dataType == null) || dataType.isEmpty() || dataType.equals("*")) && ((locId == null) || locId.isEmpty()) ) {
 			// Return the cached list of all time series short names.
-			Message.printStatus(2, routine, "Returning all " + tsShortNameList.size() + " tsShortName for dataType=" + dataType
-				+ " locId=" + locId);
+			if ( Message.isDebugOn ) {
+				Message.printStatus(2, routine, "Returning all " + this.tsShortNameList.size() + " tsShortName for dataType=" + dataType
+					+ " locId=" + locId);
+			}
 			return this.tsShortNameList;
 		}
 		else {
@@ -781,8 +783,10 @@ public class KiWISDataStore extends AbstractWebServiceDataStore implements DataS
 				}
 			}
 			Collections.sort(tsShortNameList,String.CASE_INSENSITIVE_ORDER);
-			Message.printStatus(2, routine, "Found " + tsShortNameList.size() + " tsShortName for dataType=" + dataType
-				+ " locId=" + locId);
+			if ( Message.isDebugOn ) {
+				Message.printStatus(2, routine, "Found " + tsShortNameList.size() + " tsShortName for dataType=" + dataType
+					+ " locId=" + locId);
+			}
 			return tsShortNameList;
 		}
 	}
@@ -1451,19 +1455,24 @@ public class KiWISDataStore extends AbstractWebServiceDataStore implements DataS
 				+ "&returnfields="
 				+ URLEncoder.encode("Timestamp,Value,Quality Code",StandardCharsets.UTF_8.toString()));
 		
-		// Add where for period to query using ISO format "YYYY-MM-DD hh:mm:ss"
-		// (no T between date and time because dealing with quotes may be problematic).
+		// Add where for period to query using ISO format "YYYY-MM-DD hh:mm:ss":
+		// - no T between date and time?
+		// - must URLencode the string
 		
 		if ( readStart != null ) {
-			requestUrl.append("&from=" + readStart);
+			//requestUrl.append("&from=" + readStart);
+			requestUrl.append("&from=" + URLEncoder.encode(readStart.toString(DateTime.FORMAT_YYYY_MM_DD_HH_mm),StandardCharsets.UTF_8.toString()));
 		}
 		if ( readEnd != null ) {
-			requestUrl.append("&to=" + readEnd);
+			//requestUrl.append("&to=" + readEnd);
+			requestUrl.append("&to=" + URLEncoder.encode(readEnd.toString(DateTime.FORMAT_YYYY_MM_DD_HH_mm),StandardCharsets.UTF_8.toString()));
 		}
 		if ( (readStart == null) && (readEnd == null) ) {
 			// Request all data.
 			requestUrl.append("&period=complete");
 		}
+		
+		Message.printStatus(2, routine, "Reading time series values from: " + requestUrl);
 
 		// Request the JSON and parse into objects.
 

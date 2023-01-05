@@ -33,11 +33,11 @@ See the [KiWIS Datastore Appendix](../../datastore-ref/KiWIS/KiWIS.md) for infor
 
 ## Examples ##
 
-See the [automated tests](https://github.com/OpenWaterFoundation/owf-tstool-kiwis-plugin/tree/master/test/commands/ReadKiWIS).
+See the [automated tests](https://github.com/OpenWaterFoundation/owf-tstool-kiwis-plugin/tree/master/test/commands/TSID/).
 
 ## Troubleshooting ##
 
 ## See Also ##
 
-* [`ReadKiWIS`](../ReadKiWIS/ReadKiWIS.md) command
-* [`ReadTimeSeries`](https://opencdss.state.co.us/tstool/latest/doc-user/command-ref/ReadTimeSeries/ReadTimeSeries/) command - provides more flexibility
+* [`ReadKiWIS`](../ReadKiWIS/ReadKiWIS.md) command for full control reading KiWIS time series
+* [`ReadTimeSeries`](https://opencdss.state.co.us/tstool/latest/doc-user/command-ref/ReadTimeSeries/ReadTimeSeries/) command - provides more flexibility than a TSID

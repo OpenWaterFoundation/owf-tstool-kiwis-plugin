@@ -30,25 +30,35 @@ TSTool must have been previously installed and run at least once.
 
 1.  Download the `tstool-kiwis-plugin` software installer file from the
     [TSTool KiWIS Download page](https://software.openwaterfoundation.org/tstool-kwis-plugin/).
-    For example with a name similar to `owf-tstool-kiwis-plugin-1.0.0.jar`.
+    For example with a name similar to `tstool-kiwis-plugin-1.0.0-win-202301050440.zip`.
 2.  If installing the plugin in user files and if TSTool was not run before,
     run TSTool once to automatically create user folders and files needed by the plugin.
-3.  Copy the `jar` file to the following folder:
-    1.  If installing in user files (`~` indicates user's home folder on Linux and `NN` is the TSTool major version):
-        *   Windows: `C:\Users\user\.tstool\NN\plugins\owf-tstool-kiwis-plugin\`
-        *   Linux: `~/.tstool/NN/plugins/owf-tstool-kiwis-plugin/`
+3.  Copy the `owf-tstool-kiwis-plugin` folder from the zip file to the following folder:
+    1.  If installing in user files (`NN` is the TSTool major version):
+        *   Windows: `C:\Users\user\.tstool\NN\plugins\`
+        *   Linux (`~` indicates the user's home folder): `~/.tstool/NN/plugins/`
     2.  If installing in system files on Linux (`opt`), install in the following folder:
-        *   Windows: `C:\CDSS\TSTool-Version\plugins\owf-tstool-kiwis-plugin\`
-        *   Linux: `/opt/tstool-version/plugins/owf-tstool-kiwis-plugin/`
+        *   Linux: `/opt/tstool-version/plugins/`
 4.  If an old version of the plugin was previous installed,
     delete the old `jar` file or move to the `plugins-old/` folder (same level as the `plugins` folder) to archive.
     Only one copy of the plugin `jar` file can be found in the `plugins` folder to avoid software conflicts.
     If the KiWIS plugin features are not functioning properly, it may be due to conflicting jar files.
     The ***Commands(Plugin)*** menu will usually contain duplicate menus if multiple `jar` files are found in the `plugins` folder.
+    Currently, the `dep/` folder is empty because the plugin has no dependencies beyond the core TSTool software.
 5.  Configure one or more datastore configuration files according to the
     [KiWIS Data Web Services Datastore](../datastore-ref/KiWIS/KiWIS.md#datastore-configuration-file) documentation.
 6.  Test web services access using TSTool by selecting the datastore name that was configured and selecting time series.
 7.  If there are issues, use the ***View / Datastores*** menu item to list enabled datastores.
 8.  If necessary, see the [Troubleshooting](../troubleshooting/troubleshooting.md) documentation.
+
+On Windows, the installation folder will be similar to the following:
+
+**<p style="text-align: center;">
+![windows-plugins](windows-plugins.png)
+</p>**
+
+**<p style="text-align: center;">
+KiWIS Plugins Folders on Windows (<a href="../windows-plugins.png">see also the full-size image)</a>
+</p>**
 
 TSTool will be enhanced in the future to provide a "plugin manager" to help with these tasks.

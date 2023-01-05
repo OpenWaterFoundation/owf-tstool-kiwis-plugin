@@ -1,5 +1,5 @@
 StartLog(LogFile="results/read-objects.tstool.log")
-# Read KiWIS objects so that business objects can be understood.
+# Read KiWIS objects to understand the API.
 #
 # Catchment list:
 # - make sure to request format=objson

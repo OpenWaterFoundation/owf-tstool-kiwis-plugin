@@ -106,14 +106,18 @@ throws InvalidCommandParameterException {
     status.clearLog(CommandPhaseType.INITIALIZATION);
 
     String DataStore = parameters.getValue ( "DataStore" );
-    String TSID = parameters.getValue ( "TSID" );
     String DataType = parameters.getValue ( "DataType" );
-    String Interval = parameters.getValue ( "Interval" );
+    //String Interval = parameters.getValue ( "Interval" );
     String LocId = parameters.getValue ( "LocId" );
+    String TsShortName = parameters.getValue ( "TsShortName" );
     String InputStart = parameters.getValue ( "InputStart" );
     String InputEnd = parameters.getValue ( "InputEnd" );
     String InputFiltersCheck = parameters.getValue ( "InputFiltersCheck" ); // Passed in from the editor, not an actual parameter.
-    String SourceNumbers = parameters.getValue ( "SourceNumbers" );
+    String Where1 = parameters.getValue ( "Where1" );
+    String Where2 = parameters.getValue ( "Where2" );
+    String Where3 = parameters.getValue ( "Where3" );
+    String Where4 = parameters.getValue ( "Where4" );
+    String Where5 = parameters.getValue ( "Where5" );
     
 	if ( (DataStore == null) || DataStore.isEmpty() ) {
         message = "The datastore must be specified.";
@@ -123,17 +127,6 @@ throws InvalidCommandParameterException {
                 message, "Specify the datastore." ) );
 	}
 	
-	// Make sure that when LocId is specified the data type is not a wildcard.
-	if ( (LocId != null) && !LocId.equals("") ) {
-		if ( DataType.equals("*") ) {
-            message = "The data type cannot be * when matching a single time series.";
-			warning += "\n" + message;
-            status.addToLog ( CommandPhaseType.INITIALIZATION,
-                    new CommandLogRecord(CommandStatusType.FAILURE,
-                            message, "Specify a specific data type." ) );
-		}
-	}
-
 	// TODO SAM 2023-01-02 Need to check the WhereN parameters.
 
 	if ( (InputStart != null) && !InputStart.equals("") &&
@@ -165,46 +158,71 @@ throws InvalidCommandParameterException {
 		}
 	}
 
-	String IncludeEstimates = parameters.getValue ( "IncludeEstimates" );
-	if ((IncludeEstimates != null) && !IncludeEstimates.equals("")){
-		if ( !IncludeEstimates.equalsIgnoreCase(_True) &&
-			!IncludeEstimates.equalsIgnoreCase(_False) ) {
-            message = "Invalid IncludeEstimates parameter \"" + IncludeEstimates + "\"";
-			warning += "\n" + message;
-            status.addToLog ( CommandPhaseType.INITIALIZATION,
-                new CommandLogRecord(CommandStatusType.FAILURE,
-                    message, "Specify " + _False + " or " + _True + ", or blank for default of " + _True + "." ) );
-		}
-	}
-	String IncludeMissing = parameters.getValue ( "IncludeMissing" );
-	if ((IncludeMissing != null) && !IncludeMissing.equals("")){
-		if ( !IncludeMissing.equalsIgnoreCase(_True) &&
-			!IncludeMissing.equalsIgnoreCase(_False) ) {
-            message = "Invalid IncludeMissing parameter \"" + IncludeMissing + "\"";
-			warning += "\n" + message;
-            status.addToLog ( CommandPhaseType.INITIALIZATION,
-                new CommandLogRecord(CommandStatusType.FAILURE,
-                    message, "Specify " + _False + " or " + _True + ", or blank for default of " + _False + "." ) );
-		}
-	}
-
-	if ( (SourceNumbers != null) && !SourceNumbers.equals("") && (SourceNumbers.indexOf("${") < 0)) {
-		String [] sourceNumbers = StringUtil.toArray(StringUtil.breakStringList(SourceNumbers, ",", 0),true);
-		for ( String sourceNumber : sourceNumbers ) {
-			if ( !StringUtil.isInteger(sourceNumber) ) {
-				message = "Invalid SourceNumber \"" + sourceNumber + "\"";
-				warning += "\n" + message;
-				status.addToLog ( CommandPhaseType.INITIALIZATION,
-					new CommandLogRecord(CommandStatusType.FAILURE,
-						message, "Specify source numbers as integers, separated by commas." ) );
-			}
-		}
-	}
-	
 	// Make sure that some parameters are specified so that a query of all data is disallowed.
 	
-	if ( ((LocId == null) || LocId.isEmpty()) ) {
-		
+	int whereCount = 0;
+	if ( (Where1 != null) && !Where1.startsWith(";") ) {
+		++whereCount;
+	}
+	if ( (Where2 != null) && !Where2.startsWith(";") ) {
+		++whereCount;
+	}
+	if ( (Where3 != null) && !Where3.startsWith(";") ) {
+		++whereCount;
+	}
+	if ( (Where4 != null) && !Where4.startsWith(";") ) {
+		++whereCount;
+	}
+	if ( (Where5 != null) && !Where5.startsWith(";") ) {
+		++whereCount;
+	}
+	
+	boolean readOne = false;
+	boolean readMult = false;
+	if ( (LocId != null) && !LocId.isEmpty() ) {
+		// Querying one time series.
+		readOne = true;
+
+		// The data type cannot be a wild card.
+		if ( DataType.equals("*") ) {
+            message = "The data type cannot be * when matching a single time series.";
+			warning += "\n" + message;
+            status.addToLog ( CommandPhaseType.INITIALIZATION,
+                    new CommandLogRecord(CommandStatusType.FAILURE,
+                            message, "Specify a specific data type." ) );
+		}
+
+		// Must also specify the short time series name.
+		if ( (TsShortName == null) || TsShortName.isEmpty() ) {
+           	message = "The time series short name must be specified when matching a single time series.";
+			warning += "\n" + message;
+           	status.addToLog ( CommandPhaseType.INITIALIZATION,
+               	new CommandLogRecord(CommandStatusType.FAILURE,
+                   	message, "Specify time series short name." ) );
+		}
+	}
+	if ( whereCount > 0 ) {
+		// Querying multiple time series.
+		readMult = true;
+	}
+	Message.printStatus(2, "", "LocId=" + LocId + " whereCount=" + whereCount + " readOne=" + readOne + " readMult=" + readMult);
+	Message.printStatus(2, "", "Where1=" + Where1 + " Where2=" + Where2 + " Where3=" + Where3 + " Where4=" + Where4 + " Where5=" + Where5);
+	
+	if ( readOne && readMult ) {
+		// Can only read one or multiple.
+        message = "Parameters are specified to match a single time series and multiple time series (but not both).";
+		warning += "\n" + message;
+        status.addToLog ( CommandPhaseType.INITIALIZATION,
+            new CommandLogRecord(CommandStatusType.FAILURE,
+                message, "Specify parameters to match a single time series OR multiple time series." ) );
+	}
+	if ( !readOne && !readMult ) {
+		// Not enough parameters are specified.
+        message = "Parameters must be specified to match a single time series OR multiple time series.";
+		warning += "\n" + message;
+        status.addToLog ( CommandPhaseType.INITIALIZATION,
+            new CommandLogRecord(CommandStatusType.FAILURE,
+                message, "Specify parameters to match a single time series OR multiple time series." ) );
 	}
 
     // If any issues were detected in the input filter add to the message string.
@@ -228,9 +246,6 @@ throws InvalidCommandParameterException {
     validList.add ( "Alias" );
     validList.add ( "InputStart" );
     validList.add ( "InputEnd" );
-    validList.add ( "IncludeEstimates" );
-    validList.add ( "IncludeMissing" );
-    validList.add ( "SourceNumbers" );
     validList.add ( "Timezone" );
     validList.add ( "Debug" );
     warning = TSCommandProcessorUtil.validateParameterNames ( validList, this, warning );
@@ -363,10 +378,6 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
         readData = false;
     }
     
-	String LocId = parameters.getValue("LocId");
-	if ( commandPhase == CommandPhaseType.RUN ) { 
-	    LocId = TSCommandProcessorUtil.expandParameterValue(getCommandProcessor(), this, LocId);
-	}
 	String DataType = parameters.getValue("DataType");
 	if ( commandPhase == CommandPhaseType.RUN ) {
 	    DataType = TSCommandProcessorUtil.expandParameterValue(getCommandProcessor(), this, DataType);
@@ -374,6 +385,14 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
 	String Interval = parameters.getValue("Interval");
 	if ( commandPhase == CommandPhaseType.RUN ) {
 	    Interval = TSCommandProcessorUtil.expandParameterValue(getCommandProcessor(), this, Interval);
+	}
+	String LocId = parameters.getValue("LocId");
+	if ( commandPhase == CommandPhaseType.RUN ) { 
+	    LocId = TSCommandProcessorUtil.expandParameterValue(getCommandProcessor(), this, LocId);
+	}
+	String TsShortName = parameters.getValue("TsShortName");
+	if ( commandPhase == CommandPhaseType.RUN ) { 
+	    TsShortName = TSCommandProcessorUtil.expandParameterValue(getCommandProcessor(), this, TsShortName);
 	}
 	String InputStart = parameters.getValue("InputStart");
 	if ( (InputStart == null) || InputStart.isEmpty() ) {
@@ -422,7 +441,7 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
 	// Set up properties for the read:
 	// - OK if null values
 
-	PropList readProps = new PropList ( "ReadProps" );
+	//PropList readProps = new PropList ( "ReadProps" );
 
 	// Now try to read.
 
@@ -461,10 +480,26 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
 					tsident.setLocation(LocId);
 				}
 				tsident.setSource("KiWIS");
-				if ( DataType != null ) {
-					tsident.setType(DataType);
+				String dataType = "";
+				if ( (DataType != null) && !DataType.isEmpty() && !DataType.equals("*") ) {
+					if ( (DataType.indexOf("-") > 0) || (DataType.indexOf(".") > 0) ) {
+						dataType += "'" + DataType + "'";
+					}
+					else {
+						dataType += DataType;
+					}
 				}
-				if ( Interval != null ) {
+				dataType += "-";
+				if ( (TsShortName != null) && !TsShortName.isEmpty() && !TsShortName.equals("*") ) {
+					if ( (TsShortName.indexOf("-") > 0) || (TsShortName.indexOf(".") > 0) ) {
+						dataType += "'" + TsShortName + "'";
+					}
+					else {
+						dataType += TsShortName;
+					}
+				}
+				tsident.setType(dataType);
+				if ( (Interval != null) && !Interval.isEmpty() && !Interval.equals("*") ) {
 					tsident.setInterval(Interval);
 				}
 				String TSID = tsident.getIdentifier();
@@ -505,15 +540,14 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
 	            // Read 1+ time series using the input filters.
 				// Get the input needed to process the file.
 				Message.printStatus(2, routine, "Reading multiple time series using input filter.");
-				//String DataType = parameters.getValue ( "DataType" );
-				//String Interval = parameters.getValue ( "Interval" );
 				String InputName = parameters.getValue ( "InputName" );
 				if ( InputName == null ) {
 					InputName = "";
 				}
-				List<String> whereNList = new ArrayList<String>();
+				List<String> whereNList = new ArrayList<>();
 				int nfg = 0; // Used below.
-				// User may have skipped where and left a blank so loop over a sufficiently large number of where parameters.
+				// User may have skipped a where and left a blank so loop over a sufficiently large number of where parameters
+				// to get the non-blank filters.
 				for ( int ifg = 0; ifg < 25; ifg++ ) {
 					WhereN = parameters.getValue ( "Where" + (ifg + 1) );
 					if ( WhereN != null ) {
@@ -537,7 +571,9 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
 	
 				filterPanel = new KiWIS_TimeSeries_InputFilter_JPanel ( dataStore, 5 );
 	
-				// Populate with the where information from the command.
+				// Populate with the where information from the command:
+				// - the first part of the where should match the "whereLabelPersistent" used when constructing the input filter
+				// - the KiWIS internal field is used to help users correlate the TSTool filter to KiWIS web services
 	
 				String filter_delim = ";";
 				for ( int ifg = 0; ifg < nfg; ifg ++ ) {
@@ -570,6 +606,7 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
 				// Read the catalog.
 				int size = 0;
 				try {
+					// No KiWIS ts_id or path are specified because only the where filters are used.
 					Integer kiwisTsid = null;
 					String kiwisTsPath = null;
 					tsCatalogList = dataStore.readTimeSeriesCatalog ( dataTypeReq, Interval, filterPanel, kiwisTsid, kiwisTsPath );
@@ -621,11 +658,35 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
 					if ( locId.indexOf(".") >= 0 ) {
 						locId = "'" + locId + "'";
 					}
+					String dataType = "";
+					if ( (DataType != null) && !DataType.isEmpty() && !DataType.equals("*") ) {
+						if ( (DataType.indexOf("-") > 0) || (DataType.indexOf(".") > 0) ) {
+							dataType += "'" + DataType + "'";
+						}
+						else {
+							dataType += DataType;
+						}
+					}
+					dataType += "-";
+					String tsShortName = tsCatalog.getTsShortName();
+					if ( (tsShortName != null) && !tsShortName.isEmpty() && !tsShortName.equals("*") ) {
+						if ( (tsShortName.indexOf("-") > 0) || (tsShortName.indexOf(".") > 0) ) {
+							dataType += "'" + tsShortName + "'";
+						}
+						else {
+							dataType += tsShortName;
+						}
+					}
+					String interval = tsCatalog.getDataInterval();
+					if ( (interval == null) || interval.equals("*") ) {
+						// Don't set the interval so called code can determine.
+						interval = "";
+					}
 					tsidentString =
 						locId
 						+ ".KiWIS"
-						+ "." + DataType
-						+ "." + Interval;
+						+ "." + dataType
+						+ "." + interval;
 		            // Update the progress.
 					message = "Reading KiWIS web service time series " + (i + 1) + " of " + size + " \"" + tsidentString + "\"";
 	                notifyCommandProgressListeners ( i, size, (float)-1.0, message );
