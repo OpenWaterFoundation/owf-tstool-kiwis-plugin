@@ -157,7 +157,7 @@ The same installer can also be installed on Linux.
 
 echo '<h2>Linux Download</h2>
 <p>Linux versions of the TSTool KiWIS Plugin are not actively developed.
-The windows plugin can be installed on Linux.</p>
+The Windows plugin can be installed on Linux.
 Contact OWF if additional help is needed.</p>
 
 <hr>' >> ${indexHtmlTmpFile}
@@ -185,7 +185,7 @@ createIndexHtmlFile_Table() {
     # Replace normal version to have -zzz at end and "dev" version to be "-dev" so that sort is correct,
     #   then change back to previous strings for output.
     # The use space as the delimiter and sort on the 3rd token.
-    echo '<tr><th>Download File</th><th>Product</th><th>Version</th><th>File Timestamp (Mountain)</th><th>Size (Bytes)</th><th>Operating System</th><th>User Doc</th><th>Dev Doc</th></tr>' >> ${indexHtmlTmpFile}
+    echo '<tr><th>Download File</th><th>Product</th><th>Version</th><th>File Timestamp</th><th>Size (Bytes)</th><th>Operating System</th><th>User Doc</th><th>Dev Doc</th></tr>' >> ${indexHtmlTmpFile}
     # Version before sort...
     # cat "${tmpS3CatalogPath}" | grep "${downloadOs}-" | sort -r | awk '
     cat "${tmpS3CatalogPath}" | grep "${downloadOs}-" | awk '{ printf "%s %s %s %s\n", $1, $2, $3, $4 }' | sed -E 's|([0-9][0-9]/)|\1-zzz|g' | sed 's|/-zzz|-zzz|g' | sed 's|dev|-dev|g' | sort -r -k4,4 | sed 's|-zzz||g' | sed 's|-dev|dev|g'  | awk '
