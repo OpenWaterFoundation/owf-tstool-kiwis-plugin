@@ -217,12 +217,15 @@ throws InvalidCommandParameterException {
                 message, "Specify parameters to match a single time series OR multiple time series." ) );
 	}
 	if ( !readOne && !readMult ) {
-		// Not enough parameters are specified.
-        message = "Parameters must be specified to match a single time series OR multiple time series.";
-		warning += "\n" + message;
-        status.addToLog ( CommandPhaseType.INITIALIZATION,
-            new CommandLogRecord(CommandStatusType.FAILURE,
-                message, "Specify parameters to match a single time series OR multiple time series." ) );
+		// OK if the DataType is not *.
+		if ( DataType.equals("*") ) {
+			// Not enough parameters are specified.
+        	message = "Parameters must be specified to match a single time series OR multiple time series (reading ALL time series is prohibited).";
+			warning += "\n" + message;
+        	status.addToLog ( CommandPhaseType.INITIALIZATION,
+            	new CommandLogRecord(CommandStatusType.FAILURE,
+                	message, "Specify parameters to match a single time series OR multiple time series.  At a minimum, specify the data type." ) );
+		}
 	}
 
     // If any issues were detected in the input filter add to the message string.
@@ -659,12 +662,14 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
 						locId = "'" + locId + "'";
 					}
 					String dataType = "";
-					if ( (DataType != null) && !DataType.isEmpty() && !DataType.equals("*") ) {
-						if ( (DataType.indexOf("-") > 0) || (DataType.indexOf(".") > 0) ) {
-							dataType += "'" + DataType + "'";
+					// Data type is from the catalog (not the original data type).
+					String dataTypeFromCatalog = tsCatalog.getStationParameterNo();
+					if ( (dataTypeFromCatalog != null) && !dataTypeFromCatalog.isEmpty() && !dataTypeFromCatalog.equals("*") ) {
+						if ( (dataTypeFromCatalog.indexOf("-") > 0) || (dataTypeFromCatalog.indexOf(".") > 0) ) {
+							dataType += "'" + dataTypeFromCatalog + "'";
 						}
 						else {
-							dataType += DataType;
+							dataType += dataTypeFromCatalog;
 						}
 					}
 					dataType += "-";

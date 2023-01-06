@@ -144,7 +144,7 @@ The same installer can also be installed on Linux.
 
 <hr>
 <h2>Windows Download</h2>
-<p>The Windows version is under active development.</p>
+<p>The Windows version is the primary development version.</p>
 
 <ol>
 <li> Download a TSTool KiWIS Plugin Windows installer (zip file) from below.</li>
@@ -185,7 +185,7 @@ createIndexHtmlFile_Table() {
     # Replace normal version to have -zzz at end and "dev" version to be "-dev" so that sort is correct,
     #   then change back to previous strings for output.
     # The use space as the delimiter and sort on the 3rd token.
-    echo '<tr><th>Download File</th><th>Product</th><th>Version</th><th>File Timestamp (UTC)</th><th>Size (KB)</th><th>Operating System</th><th>User Doc</th><th>Dev Doc</th></tr>' >> ${indexHtmlTmpFile}
+    echo '<tr><th>Download File</th><th>Product</th><th>Version</th><th>File Timestamp (Mountain)</th><th>Size (Bytes)</th><th>Operating System</th><th>User Doc</th><th>Dev Doc</th></tr>' >> ${indexHtmlTmpFile}
     # Version before sort...
     # cat "${tmpS3CatalogPath}" | grep "${downloadOs}-" | sort -r | awk '
     cat "${tmpS3CatalogPath}" | grep "${downloadOs}-" | awk '{ printf "%s %s %s %s\n", $1, $2, $3, $4 }' | sed -E 's|([0-9][0-9]/)|\1-zzz|g' | sed 's|/-zzz|-zzz|g' | sed 's|dev|-dev|g' | sort -r -k4,4 | sed 's|-zzz||g' | sed 's|-dev|dev|g'  | awk '
@@ -563,8 +563,8 @@ uploadIndexFiles() {
   #${awsExe} cloudfront create-invalidation --distribution-id ${cloudFrontDistributionId} --paths "/tstool-kiwis-plugin/index.html*" "/tstool-kiwis-plugin/" "/tstool-kiwis-plugin" --profile "${awsProfile}"
   #${awsExe} cloudfront create-invalidation --distribution-id ${cloudFrontDistributionId} --paths "/tstool-kiwis-plugin/index.html*" --profile "${awsProfile}"
   #${awsExe} cloudfront create-invalidation --distribution-id "${cloudFrontDistributionId}" --paths '/tstool-kiwis-plugin/index*' --output json --profile "${awsProfile}" | tee ${tmpFile}
-  logInfo "Running: ${awsExe} cloudfront create-invalidation --distribution-id \"${cloudFrontDistributionId}\" --paths '/tstool-kiwis-plugin/' '/tstool-kiwis-plugin/index.html' --output json --profile \"${awsProfile}\""
-  ${awsExe} cloudfront create-invalidation --distribution-id "${cloudFrontDistributionId}" --paths '/tstool-kiwis-plugin' '/tstool-kiwis-plugin/index.html*' --output json --profile "${awsProfile}" | tee ${tmpFile}
+  logInfo "Running: ${awsExe} cloudfront create-invalidation --distribution-id \"${cloudFrontDistributionId}\" --paths '/tstool-kiwis-plugin/index.html*' --output json --profile \"${awsProfile}\""
+  ${awsExe} cloudfront create-invalidation --distribution-id "${cloudFrontDistributionId}" --paths '/tstool-kiwis-plugin/index.html*' --output json --profile "${awsProfile}" | tee ${tmpFile}
   invalidationId=$(cat ${tmpFile} | grep '"Id":' | cut -d ':' -f 2 | tr -d ' ' | tr -d '"' | tr -d ',')
   errorCode=${PIPESTATUS[0]}
   if [ ${errorCode} -ne 0 ]; then

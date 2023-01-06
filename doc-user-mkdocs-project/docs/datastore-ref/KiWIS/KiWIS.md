@@ -90,12 +90,12 @@ ts_id:123456.KiWIS.'stationparameter_no'-'ts_shortname'.ts_spacing~DataStoreName
 The meaning of the TSID parts is as follows:
 
 *   The `LocType` syntax with KiWIS `ts_id` ensures a unique TSID.
-    However, the default TSID created by the TSTool main interface does not use the `ts_id` (described below).
+    However, the default TSID created by the TSTool main interface does not use the `ts_id`.
 *   The `LocationId` is set to:
+    +   If `LocType` syntax is not used (the default behavior):
+        -   The KiWIS `station_no` (text) is used.
     +   If `LocType` is `ts_id`:
         -   The KiWIS `ts_id` (integer) is used.
-    +   If `LocType` syntax is not used:
-        -   The KiWIS `station_no` (text) is used.
 *   The `DataSource` is set to:
     +   The data source is currently always set to `KiWIS`.
     +   In the future it may be set to the entity from which data originates,
@@ -103,9 +103,11 @@ The meaning of the TSID parts is as follows:
     +   The `DataSource` is not currently used to uniquely identify time series
         because other KiWIS information is used.
 *   The `DataType` is set to:
-    +   KiWIS `stationparameter_no-ts_shortname` (`station_parameter`, a dash, and then `ts_shortname`).
-    +   If the `station_parameter` contains a dash or period, surround it with single quotes.
+    +   KiWIS `stationparameter_no-ts_shortname` (`stationparameter_no`, a dash, and then `ts_shortname`).
+    +   If the `stationparameter_no` contains a dash or period, surround it with single quotes.
     +   If the `ts_shortname` contains a dash or period, surround it with single quotes.
+    +   The TSTool user interface ***Data type*** choice only shows the `stationparameter_no`
+        but the ***Time Series List*** shows the full data type with the two parts.
 *   The `Interval` is set to:
     +   If the KiWIS `ts_spacing` is not blank,
         it is converted from the [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601)
@@ -120,11 +122,15 @@ The meaning of the TSID parts is as follows:
         -   `IrregSecond` (irregular interval with date/time to second precision)
         -   other irregular intervals are supported and can be evaluated for use with KiWIS
     +   If the `ts_spacing` cannot be converted to an interval handled by TSTool,
-        the `ts_spacing` is passed through and TSTool will not handle the time series.
+        the `ts_spacing` is passed through and TSTool may not handle the time series.
     +   If the KiWIS `ts_spacing` is blank, TSTool will internally use `IrregSecond` for the interval
         because it has no other information.
     +   The interval is for information purposes and is not used to uniquely identify the time series
         because other KiWIS information is used.
+    +   The interval is important because it impacts the internal data representation.
+    +   The user interface ***Time step*** is currently not used to limit queries but may do so in the future.
+        KiWIS web services do not allow filtering on `ts_spacing` so TSTool would need to filter after the
+        initial time series list is read.
 *   The `DatastoreName` is taken from the datastore configuration file `Name` property:
     +   Multiple datastores can be configured, each pointing to a different KiWIS web service.
         Therefore, datastore names should be assigned with enough detail to avoid confusion.
@@ -135,9 +141,12 @@ The meaning of the TSID parts is as follows:
 
 Additional mapping of KiWIS data to TSTool time series is as follows:
 
-*   The `getTimeseriesValues` `Quality Code` is retrieved for each data value and is set as the data flag.
+*   The `getTimeseriesValues` service `Quality Code` field is retrieved for each data value and is set as the data flag.
     The `getQualityCodes` service is used to retrieve the quality code data to allow conversion of numerical code to text.
     For example, a `Quality Code` value of `0` is converted to `Excellent`.
+*   The KiWIS `ts_unit_symbol` is used for time series data units.
+*   The KiWIS `station_name` is used for the time series description, which is used in graph legends.
+*   The special value `NaN` is used internally for the missing data value.
 
 ## Limitations ##
 
@@ -147,35 +156,40 @@ The following limitations and design issues have been identified during developm
     1.  Is there a way to get the web service version?
     2.  If yes, then the `#@require` comment can be implemented to check the datastore version.
         This feature is useful to ensure that workflows are consistent with the datastore version.
-        Currently this feature is not enabled and warn if inconsistent.
+        Currently this feature is not enabled.
 2.  **Location identifier:**
-    1.  The KiWIS `ts_id` can be used to uniquely identify a time series,
-        for example with the TSID format that uses location type syntax.
-        However, the KiWIS `ts_id` is an internal database integer that does not have
-        real-world meaning such as the station identifier.
-    2.  The default implementation in TSTool is to use the `station_no` for the location,
+    1.  The default implementation in TSTool is to use the `station_no` for the location,
         which makes it easier to relate the time series to its station.
         The data type is used with `station_no` to create a unique identifier,
         as described in the [Standard Time Series Properties](#standard-time-series-properties) section above.
+    2.  The KiWIS `ts_id` can be used to uniquely identify a time series,
+        for example with the TSID format that uses location type syntax.
+        However, the KiWIS `ts_id` is an internal database integer that does not have
+        real-world meaning such as the station identifier.
+        Option 1 is used by default in TSTool.
 3.  **Data type:**
-    1.  The TSTool main interface and `ReadKWIS` command editor ***Data types*** contains the unique "data types" used by TSTool.
-        KiWIS provides multiple multiple options for data type (typically called "paramerter" by KiWIS),
+    1.  The TSTool main interface and `ReadKWIS` command editor ***Data type*** list contains the unique "data types" used by TSTool.
+        KiWIS provides multiple options for data type (typically called "paramerter" by KiWIS),
         some of which are more reeadable and verbose than others.
         For consistency, the `stationparameter_no` values are used, which are used in the
         `ts_path` and data type part of the TSTool TSID.
     2.  If feedback is that the `stationparameter_no` is not the best for data type,
         then the plugin code will need to be changed.
 4.  **Unique time series identifier:** - The KiWIS `ts_path` provides a unique identifier that is similar to the TSTool TSID:
-    1.  See item 2 above for **Location Identifier:**
+    1.  See item 2 above about the **Location Identifier**.
     2.  The KiWIS `ts_path` contains `site_no`, `station_no`, `stationparameter_no`, and `ts_shortname`.
     3.  TSTool does not currently use the `site_no` in the TSID because `site_no` is used to group stations
         in a regional area, but `station_no` is typically unique without needing to use the `site_no`.
         The `site_no` might need to be used if a large system contains, for example,
         neighboring flood warning systems that use the same `station_no` in each system.
         The TSTool KiWIS design will be enhanced if this needs to be addressed.
+    4.  The data interval in the TSID is not currently used to uniquely identify the time series
+        because other TSID parts result in a unique identifier.
+        However, better handling of the interval will improve the software (see the next item).
 5.  **Data interval:**
     1.  The KiWIS `ts_spacing` is often blank and therefore TSTool uses `IrregSecond` internally by default.
-    2.  Blank `ts_spacing` values must be corrected in WISKI in order for TSTool to use the most appropriate time series interval.
+    2.  Blank `ts_spacing` values must be corrected in WISKI in order for TSTool to use the most appropriate time series interval,
+        especially for regular interval time series.
     3.  The `getTimeseriesList` service does not allow filtering on the `ts_spacing` so the interval
         is mainly be used to allocate memory for the time series.
     4.  If a regular interval is not known for the time series, the plugin code cannot round the current time for queries.
@@ -183,39 +197,41 @@ The following limitations and design issues have been identified during developm
     5.  Graphing irregular interval time series will result in lines being drawing over gaps
         whereas lines will not be drawn over gaps for regular interval time series.
     6.  TSTool assigns data at the timestamp for irregular data.
-        Regular interval data are assigned at the timestamp and are for timestamp-ending interval.
+        Regular interval data are assigned at the timestamp, which corresponds to the timestamp-ending interval.
         For exampample, the `ts_spacing=P1D`) timestamp is at the midnight timestamp ending the data accumulation.
-        **Additional work may be needed to understand how KiWIS handles dates compared to times.**
+        **Additional work may be needed to understand how KiWIS handles dates compared to times for longer intervals.**
 6.  **Time period**:
     1.  The KiWIS web services seem to return extra data depending on the requested period.
+        For example, requesting a partial day returns the entire day.
         Perhaps internally the period is always rounded to day or some other precision?
-7.  **Timestamp**:
+7.  **Timestamp:**:
     1.  Need to better understand how the timestamp should be handled for day and larger interval.
     2.  The KiWIS web services `getTimeseriesValues` service returns date and time even for daily or larger interval
         (e.g., `2022-04-22T00:00:00-07:00`).
-    3.  For a `ts_spacing` of `P1D`, should the date be handled as `2022-04-22 (discard the time)?
+    3.  For a `ts_spacing` of `P1D`, should the date be handled as `2022-04-22` (discard the time),
+        possibly requiring a shift of one day to avoid midnight roll-over to the next day's hour zero?
     4.  If the time series is treated as an irregular interval,
         the resulting timestamp would position the value at midnight of the day,
         but hour zero of a day can cause a perceived shift of one day.
-8.  **Time zone**:
+8.  **Time zone:**:
     1.  The plugin currently does not convert time zones.
-        Time series perod and data values use times read from data.
-9.  **Root URL**:
+        Time series period and data values use times read from data without attempting to interpret or shift time zone.
+9.  **Root URL:**:
     1.  The datastore configuration file `ServiceRootURI` property currently specifies only the main server path
         and `?service=kisters&type=queryServices&datasource=0` is automatically added.
     2.  If this is not correct for all systems, the software may need to be updated to allow specifying
         these query parameters in the configuration file.
         The main question is probably about `datasource` (what does that mean)?
         **Will probably fix this before the production release.**
-10. **Quality code:**:
+10. **Quality code:**
     1.  The `KiWIS Quality Code` field returned by the `getTimeseriesValues` service is an integer
         that must be converted to text using output from the `getQualityCodes` service.
         An integer is returned by the `getTimeseriesValues` service and the
         corresponding text code is a full word, such as `Excellent`.
     2.  Although full words are easy to read, they make it more difficult to visualize the data because the words overwrite on graphs.
         It may be possible to use a single character (or abbreviation) mapped to the numerical codes.
-        This is more of an issue if other available data value flags are implemented in the future.
-    3.  A quick review of some data shows that historical data has a flag of `Provisional`.
+        This may be more of an issue if other time `getTimeseriesValues` flags are implemented in the future.
+    3.  A quick review of some data shows that historical data has a flag of `Provisional` for the whole period.
         The WISKI data should be reviewed to change the code to indicate validated data.
 11. **Time series manipulation:**
     1.  The KiWIS `getTimeseriesValues` service is quite complex and allows returning many fields
@@ -226,19 +242,21 @@ The following limitations and design issues have been identified during developm
         Allowing those query parameters in the `ReadKiWIS` command would allow, for example,
         comparing KiWIS calculations with TSTool calculations.
     2.  One complication is that because the manipulations occur "on the fly",
-        additional work is needed to ensure that TSTool's representation of the time series is correct,
+        additional work is needed to ensure that TSTool's representation of the resulting time series is correct,
         such as the data type, interval, etc.
         Issues like the blank `ts_spacing` discussed above may impact more advanced features.
+        Currently, TSTool uses the `getTimeseriesList` information to create a catalog of time series for
+        interactive viewing and creating time series identifiers.
+        Determining unique identifiers for time series that are derived from input would require more work.
 12. **Caching:**
     1.  TSTool performance, in particular interactive features, is impacted by web service query times.
         Therefore, it is desirable to cache data in memory so that software does not need to requery web services.
         The trade-off is that when data are cached, changes in the WISKI database will not be visible in the TSTool
         session unless TSTool rereads the data.
         There is a balance betwee performance and having access to the most recent data.
-    2.  Currently, TSTool does minimal caching needed to populate the interface choices,
-        such as the data type list shown in the main user interface.
-        The KiWIS `station_no` and `ts_shortname` are read from a cached list of time series
-        when using the `ReadKiWIS` command editor to ensure fast performance.
+    2.  Currently, TSTool does cache some data to quickly populate the interface choices
+        based on user selections,
+        such as the data type list shown in the main user interface and `ReadKiWIS` command.
         No time series list or data values are cached when reading time series.
         If performance or stale data are an issue, the implementation can be revisited.
     3.  If necessary, restart TSTool to use the latest KiWIS data.

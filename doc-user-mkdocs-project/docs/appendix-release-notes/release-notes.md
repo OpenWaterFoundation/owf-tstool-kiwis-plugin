@@ -10,6 +10,7 @@
 
 * ![new](new.png) [1.0.0] Initial production release:
     +   Main TSTool window includes browsing features to list KiWIS time series.
+    +   [TSID for KiWIS](../command-ref/TSID/TSID.md) are recognized to read time series with default parameters.
     +   The [`ReadKiWIS`](../command-ref/ReadKiWIS/ReadKiWIS.md) command is provided to automate
         reading 1+ time series.
     +   Documentation is available for the [KiWIS datastore](../datastore-ref/KiWIS/KiWIS.md).

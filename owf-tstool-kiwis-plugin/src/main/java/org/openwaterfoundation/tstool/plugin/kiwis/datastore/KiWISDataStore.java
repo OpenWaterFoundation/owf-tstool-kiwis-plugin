@@ -1181,6 +1181,16 @@ public class KiWISDataStore extends AbstractWebServiceDataStore implements DataS
     		*/
     		ts.setDate2(readEnd);
     	}
+
+    	// Set standard properties:
+    	// - use station name for the description because the station parameter name seems to be terse
+		ts.setDescription(tscatalog.getStationName());
+		ts.setDataUnits(tscatalog.getTsUnitSymbol());
+		ts.setDataUnitsOriginal(tscatalog.getTsUnitSymbol());
+		ts.setMissing(Double.NaN);
+
+		// Set the time series properties.
+		setTimeSeriesProperties ( ts, tscatalog );
     	
     	if ( readData ) {
     		// Also read the time series values.
@@ -1200,9 +1210,6 @@ public class KiWISDataStore extends AbstractWebServiceDataStore implements DataS
     			// Allocate the time series data array.
     			ts.allocateDataSpace();
     			
-    			// Set the time series properties.
-    			setTimeSeriesProperties ( ts, tscatalog );
-    		
     			// Transfer the TimeSeriesValue list to the TS data.
     			
     			Message.printStatus(2,routine, "Transferring " + timeSeriesValueList.size() + " time series values.");

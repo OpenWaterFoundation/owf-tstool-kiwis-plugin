@@ -23,7 +23,6 @@ NoticeEnd */
 package org.openwaterfoundation.tstool.plugin.kiwis.util;
 
 import RTi.Util.GUI.InputFilter;
-import RTi.Util.GUI.InputFilterCriterionType;
 import RTi.Util.Message.Message;
 
 /**
@@ -84,46 +83,46 @@ public class WebUtil {
 		
 		String whereClause = null;
 		
-		if ( operator.equalsIgnoreCase(InputFilterCriterionType.INPUT_BETWEEN.toString()) ) {
+		if ( operator.equalsIgnoreCase(InputFilter.INPUT_BETWEEN) ) {
 			// TODO - need to enable in InputFilter_JPanel.
 		}
-		else if ( operator.equalsIgnoreCase( InputFilterCriterionType.INPUT_CONTAINS.toString()) ) {
+		else if ( operator.equalsIgnoreCase( InputFilter.INPUT_CONTAINS) ) {
 			// Only applies to strings.
 		    whereClause = whereSubject + "=*" + input + "*";
 		}
-		else if ( operator.equalsIgnoreCase( InputFilterCriterionType.INPUT_ENDS_WITH.toString()) ) {
+		else if ( operator.equalsIgnoreCase( InputFilter.INPUT_ENDS_WITH) ) {
 			whereClause = whereSubject + "=*" + input;
 		}
-		else if ( operator.equalsIgnoreCase(InputFilterCriterionType.INPUT_EQUALS.toString()) ){
+		else if ( operator.equalsIgnoreCase(InputFilter.INPUT_EQUALS) ){
 			whereClause = whereSubject + "=" + input;
 		}
-		else if ( operator.equalsIgnoreCase( InputFilterCriterionType.INPUT_GREATER_THAN.toString()) ) {
+		else if ( operator.equalsIgnoreCase( InputFilter.INPUT_GREATER_THAN) ) {
 			// Only applies to numbers (?).
 			whereClause = whereSubject + ">" + input;
 		}
-		else if ( operator.equalsIgnoreCase(InputFilterCriterionType.INPUT_GREATER_THAN_OR_EQUAL_TO.toString()) ) {
+		else if ( operator.equalsIgnoreCase(InputFilter.INPUT_GREATER_THAN_OR_EQUAL_TO) ) {
 			// Only applies to numbers (?).
 			whereClause = whereSubject + ">=" + input;
 		}
 	    //else if ( operator.equalsIgnoreCase(InputFilter.INPUT_IS_EMPTY)){
 	    //    where_clause = whereSubject + "='' or where is null";
 	    //}
-		else if ( operator.equalsIgnoreCase( InputFilterCriterionType.INPUT_LESS_THAN.toString()) ) {
+		else if ( operator.equalsIgnoreCase( InputFilter.INPUT_LESS_THAN) ) {
 			// Only applies to numbers (?).
 			whereClause = whereSubject + "<" + input;
 		}
-		else if ( operator.equalsIgnoreCase( InputFilterCriterionType.INPUT_LESS_THAN_OR_EQUAL_TO.toString()) ) {
+		else if ( operator.equalsIgnoreCase( InputFilter.INPUT_LESS_THAN_OR_EQUAL_TO) ) {
 			// Only applies to numbers (?).
 			whereClause = whereSubject + "<=" + input;
 		}
-		else if ( operator.equalsIgnoreCase(InputFilterCriterionType.INPUT_MATCHES.toString())){
+		else if ( operator.equalsIgnoreCase(InputFilter.INPUT_MATCHES)){
 		    // Only applies to strings.
 			whereClause = whereSubject + "=" + input;
 		}
-		else if ( operator.equalsIgnoreCase(InputFilterCriterionType.INPUT_ONE_OF.toString()) ){
+		else if ( operator.equalsIgnoreCase(InputFilter.INPUT_ONE_OF) ){
 			// TODO - need to enable in InputFilter_JPanel.
 		}
-		else if ( operator.equalsIgnoreCase( InputFilterCriterionType.INPUT_STARTS_WITH.toString()) ) {
+		else if ( operator.equalsIgnoreCase( InputFilter.INPUT_STARTS_WITH) ) {
 			whereClause = whereSubject + "=" + input + "*";
 		}
 		else {

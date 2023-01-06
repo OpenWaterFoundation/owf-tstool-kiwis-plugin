@@ -30,7 +30,6 @@ import org.openwaterfoundation.tstool.plugin.kiwis.dao.TimeSeriesCatalog;
 import org.openwaterfoundation.tstool.plugin.kiwis.datastore.KiWISDataStore;
 
 import RTi.Util.GUI.InputFilter;
-import RTi.Util.GUI.InputFilterCriterionType;
 import RTi.Util.GUI.InputFilter_JPanel;
 import RTi.Util.Message.Message;
 import RTi.Util.String.StringUtil;
@@ -226,10 +225,10 @@ public class KiWIS_TimeSeries_InputFilter_JPanel extends InputFilter_JPanel {
 	    InputFilter filter = new InputFilter("Station - ID",
 	        "station_id", "stationId", "station_id",
 	        StringUtil.TYPE_INTEGER, stationIdChoices, stationIdChoices, false);
-	    filter.removeConstraint(InputFilterCriterionType.INPUT_GREATER_THAN.toString());
-	    filter.removeConstraint(InputFilterCriterionType.INPUT_GREATER_THAN_OR_EQUAL_TO.toString());
-	    filter.removeConstraint(InputFilterCriterionType.INPUT_LESS_THAN.toString());
-	    filter.removeConstraint(InputFilterCriterionType.INPUT_LESS_THAN_OR_EQUAL_TO.toString());
+	    filter.removeConstraint(InputFilter.INPUT_GREATER_THAN);
+	    filter.removeConstraint(InputFilter.INPUT_GREATER_THAN_OR_EQUAL_TO);
+	    filter.removeConstraint(InputFilter.INPUT_LESS_THAN);
+	    filter.removeConstraint(InputFilter.INPUT_LESS_THAN_OR_EQUAL_TO);
 	    filters.add(filter);
 
 	    Collections.sort(stationNameChoices,String.CASE_INSENSITIVE_ORDER);
@@ -251,10 +250,10 @@ public class KiWIS_TimeSeries_InputFilter_JPanel extends InputFilter_JPanel {
 	    filter = new InputFilter("Time series - ID",
 	        "ts_id", "tsId", "ts_id",
 	        StringUtil.TYPE_INTEGER, tsIdChoices, tsIdChoices, false);
-	    filter.removeConstraint(InputFilterCriterionType.INPUT_GREATER_THAN.toString());
-	    filter.removeConstraint(InputFilterCriterionType.INPUT_GREATER_THAN_OR_EQUAL_TO.toString());
-	    filter.removeConstraint(InputFilterCriterionType.INPUT_LESS_THAN.toString());
-	    filter.removeConstraint(InputFilterCriterionType.INPUT_LESS_THAN_OR_EQUAL_TO.toString());
+	    filter.removeConstraint(InputFilter.INPUT_GREATER_THAN);
+	    filter.removeConstraint(InputFilter.INPUT_GREATER_THAN_OR_EQUAL_TO);
+	    filter.removeConstraint(InputFilter.INPUT_LESS_THAN);
+	    filter.removeConstraint(InputFilter.INPUT_LESS_THAN_OR_EQUAL_TO);
 	    filters.add(filter);
 
 	    Collections.sort(tsNameChoices,String.CASE_INSENSITIVE_ORDER);
