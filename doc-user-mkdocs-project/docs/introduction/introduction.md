@@ -22,7 +22,7 @@ which also enhances the software based on project needs.
 
 *   See the latest [TSTool Documentation](https://opencdss.state.co.us/tstool/latest/doc-user/) to learn about core TSTool features.
 *   See the [TSTool Download website](https://opencdss.state.co.us/tstool/) for the most recent software versions and documentation.
-*   See the [KiWIS Plugin Download website](https://software.openwaterfoundation.org/tstool-kiwis-plugin/).
+*   See the [KiWIS Plugin download page](https://software.openwaterfoundation.org/tstool-kiwis-plugin/).
 
 ## TSTool use with KiWIS Web Services ##
 

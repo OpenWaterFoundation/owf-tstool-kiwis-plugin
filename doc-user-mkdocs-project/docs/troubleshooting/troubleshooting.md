@@ -5,8 +5,8 @@ Issues may also be related to KiWIS data.
 
 *   [Troubleshooting Core TSTool Product](#troubleshooting-core-tstool-product)
 *   [Troubleshooting KiWIS TSTool Integration](#troubleshooting-kiwis-tstool-integration)
-    +   [Web Service Datastore Returns no Data](#web-service-datastore-returns-no-data)
     +   [***Commands(Plugin)*** Menu Contains Duplicate Commands](#commandsplugin-menu-contains-duplicate-commands)
+    +   [Web Service Datastore Returns no Data](#web-service-datastore-returns-no-data)
 
 ------------------
 
@@ -16,9 +16,17 @@ See the main [TSTool Troubleshooting documentation](https://opencdss.state.co.us
 
 ## Troubleshooting KiWIS TSTool Integration ##
 
-The following are typically issues encountered when using TSTool with KiWIS.
+The following are typical issues that are encountered when using TSTool with KiWIS.
 The ***View / Datastores*** menu item will display the status of datastores.
 The ***Tools / Diagnostics - View Log File...*** menu item will display the log file.
+
+### ***Commands(Plugin)*** Menu Contains Duplicate Commands ###
+
+If the ***Commands(Plugin)*** menu contains duplicate commands,
+TSTool is finding multiple plugin `jar` files.
+To fix, check the `plugins` folder and subfolders for the software installation folder
+and the user's `.tstool/NN/plugins` folder.
+Remove extra jar files, leaving only the version that is desired (typically the most recent version).
 
 ### Web Service Datastore Returns no Data ###
 
@@ -33,11 +41,3 @@ If the web service datastore returns no data, check the following:
     to check whether the URL is correct.
 
 If the issue cannot be resolved, contact the [Open Water Foundation](https://openwaterfoundation.org/about-owf/staff/).
-
-### ***Commands(Plugin)*** Menu Contains Duplicate Commands ###
-
-If the ***Commands(Plugin)*** menu contains duplicate commands,
-TSTool is finding multiple plugin `jar` files.
-To fix, check the `plugins` folder and subfolders for the software installation folder
-and the user's `.tstool/NN/plugins` folder.
-Remove extra jar files, leaving only the version that is desired (typically the most recent version).

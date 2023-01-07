@@ -95,6 +95,10 @@ The primary uses of the plugin commands are:
 The following is a summary of plugin commands,
 which are listed in the ***Commmands(Plugin)*** menu.
 
+**<p style="text-align: center;">
+KiWIS Plugin Commands
+</p>**
+
 | **Command** | **Description** |
 | -- | -- |
 | [`ReadKiWIS`](../command-ref/ReadKiWIS/ReadKiWIS.md) | Read one or more time series from the KiWIS web services. |

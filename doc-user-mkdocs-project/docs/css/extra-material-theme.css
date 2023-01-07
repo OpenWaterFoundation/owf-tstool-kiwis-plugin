@@ -31,7 +31,7 @@ table {
  * Instead, set the background to a light gray, which works OK.
 */
 thead th {
->-------background-color: #cccccc;
+	background-color: #cccccc;
 }
 
 /*
