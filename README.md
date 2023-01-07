@@ -6,8 +6,10 @@ This plugin can be installed to enable commands that integrate TSTool with WISKI
 TSTool is part of [Colorado's Decision Support Systems (CDSS)](https://www.colorado.gov/cdss).
 See the following online resources:
 
-*   [TSTool Developer Documentation](https://opencdss.state.co.us/tstool/latest/doc-dev/)
+*   [TSTool KiWIS Plugin download page](https://software.openwaterfoundation.org/tstool-kiwis-plugin/)
+*   [TSTool KiWIS Plugin Documentation](https://software.openwaterfoundation.org/tstool-kiwis-plugin/latest/doc-user/)
 *   [TSTool User Documentation](https://opencdss.state.co.us/tstool/latest/doc-user/)
+*   [TSTool Developer Documentation](https://opencdss.state.co.us/tstool/latest/doc-dev/)
 
 See the following sections in this page:
 
@@ -119,7 +121,7 @@ The plugin is currently distributed on Windows using a zip file,
 using the following procedure:
 
 1.  Update the version:
-    1.  Update the `src/main/java/owf-tstool-kiwis-plugin/org/openwaterfoundation/tstool/plugin/kiwis/KiWIS.java` source file.
+    1.  Update the `src/main/java/owf-tstool-kiwis-plugin/org/openwaterfoundation/tstool/plugin/kiwis/PluginMeta.java` source file.
     2.  The version is extracted by scripts below to use in the documentation location and zip file name,
         which results in versioned installers being listed in the product landing page.
 2.  Update the documentation:
