@@ -6,7 +6,7 @@ StartLog(LogFile="Results/test-ReadKiWIS-Northern-SC-0042-Depth-period.tstool.lo
 # Read the full period.
 ReadKiWIS(DataStore="KiWIS-northern",DataType="Depth",Interval="*",LocId="SC-0042",TsShortName="Final_USGS",Alias="%L-%T",InputStart="2022-05-13 00:00",InputEnd="2022-05-14 12:00")
 # Uncomment the following to write the expected results.
-WriteDateValue(OutputFile="expected-results/test-ReadKiWIS-Northern-SC-0042-Depth-period-out.dv")
+# WriteDateValue(OutputFile="expected-results/test-ReadKiWIS-Northern-SC-0042-Depth-period-out.dv")
 WriteDateValue(OutputFile="results/test-ReadKiWIS-Northern-SC-0042-Depth-period-out.dv")
 # Compare the results with expected results.
 CompareFiles(InputFile1="expected-results/test-ReadKiWIS-Northern-SC-0042-Depth-period-out.dv",InputFile2="results/test-ReadKiWIS-Northern-SC-0042-Depth-period-out.dv",IfDifferent=Warn)
