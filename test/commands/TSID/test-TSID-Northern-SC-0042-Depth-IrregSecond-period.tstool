@@ -1,0 +1,14 @@
+# Test reading a KiWIS TSID:
+# - compare the result from TSID and ReadKiWIS commands
+# - defined period
+# - use data from Northern Water system, irregular interval
+StartLog(LogFile="Results/test-TSID-Northern-SC-0042-Depth-period.tstool.log")
+# Read a short period.
+SetInputPeriod(InputStart="2022-05-12 00:00",InputEnd="2022-06-30 12:00")
+SC-0042.KiWIS.Depth-Final_USGS.IrregSecond~KiWIS-northern
+ReadKiWIS(DataStore="KiWIS-northern",DataType="Depth",Interval="IrregSecond",LocId="SC-0042",TsShortName="Final_USGS")
+# Compare the in-memory time series.
+CompareTimeSeries(IfDifferent=Warn)
+# Read the web service data with WebGet to visually check the data.
+WebGet(URI="https://data.northernwater.org/KiWIS/KiWIS?datasource=0&service=kisters&type=queryServices&request=getTimeseriesValues&format=csv&ts_id=34709010&returnfields=Timestamp%2CValue%2CQuality+Code%2CInterpolation+Type&from=2022-05-12+00%3A00&to=2022-06-30+12%3A00",EncodeURI=False,LocalFile="results/test-TSID-Northern-SC-0042-Depth-IrregSecond-period.csv")
+ReadTableFromDelimitedFile(TableID="WebGetTable",InputFile="results/test-TSID-Northern-SC-0042-Depth-IrregSecond-period.csv",Delimiter=";",ColumnNames="Timestamp,Value,Quality Code,Interpolation Type")

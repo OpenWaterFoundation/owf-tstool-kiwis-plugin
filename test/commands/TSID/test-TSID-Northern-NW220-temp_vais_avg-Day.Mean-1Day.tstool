@@ -1,0 +1,14 @@
+# Test reading a KiWIS TSID:
+# - compare the result from TSID and ReadKiWIS commands
+# - full period
+# - use data from Northern Water system, 1Day interval
+StartLog(LogFile="Results/test-TSID-Northern-NW220-temp_vais_Avg-Day.Mean-1Day.tstool.log")
+# Read the full period.
+#SetInputPeriod(InputStart="2018-07-01 00:00",InputEnd="2018-07-03 00:00")
+NW220.KiWIS.temp_vais_Avg-'Day.Mean'.1Day~KiWIS-northern
+ReadKiWIS(DataStore="KiWIS-northern",DataType="temp_vais_Avg",Interval="1Day",Where1="station_no;Matches;NW220",Where2="ts_shortname;Matches;Day.Mean")
+# Compare the in-memory time series.
+CompareTimeSeries(IfDifferent=Warn)
+# Read the web services data using WebGet to visually check the data.
+WebGet(URI="https://data.northernwater.org/KiWIS/KiWIS?datasource=0&service=kisters&type=queryServices&request=getTimeseriesValues&format=csv&ts_id=1062010&returnfields=Timestamp%2CValue%2CQuality+Code%2CInterpolation+Type&period=complete",EncodeURI=False,LocalFile="results/test-TSID-Northern-NW220-temp_vais_avg-Day.Mean-1Day.csv")
+ReadTableFromDelimitedFile(TableID="WebGetTable",InputFile="results/test-TSID-Northern-NW220-temp_vais_avg-Day.Mean-1Day.csv",Delimiter=";",ColumnNames="Timestamp,Value,Quality Code,Interpolation Type")

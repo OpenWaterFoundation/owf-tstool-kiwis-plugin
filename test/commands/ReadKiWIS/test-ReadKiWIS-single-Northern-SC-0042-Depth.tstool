@@ -1,0 +1,13 @@
+# Test reading a KiWIS time series:
+# - read a single Depth time series
+# - set the period so that results are predictable
+# - use data from Northern Water system, irregular interval
+StartLog(LogFile="Results/test-ReadKiWIS-single-Northern-SC-0042-Depth.tstool.log")
+# Read the full period.
+SetInputPeriod(InputStart="2022-05-13 00:00",InputEnd="2022-05-14 12:00")
+ReadKiWIS(DataStore="KiWIS-northern",DataType="Depth",Interval="IrregSecond",LocId="SC-0042",TsShortName="Final_USGS")
+# Uncomment the following to write the expected results.
+# WriteDateValue(OutputFile="expected-results/test-ReadKiWIS-single-Northern-SC-0042-Depth-out.dv")
+WriteDateValue(OutputFile="results/test-ReadKiWIS-single-Northern-SC-0042-Depth-out.dv")
+# Compare the results with expected results.
+CompareFiles(InputFile1="expected-results/test-ReadKiWIS-single-Northern-SC-0042-Depth-out.dv",InputFile2="results/test-ReadKiWIS-single-Northern-SC-0042-Depth-out.dv",IfDifferent=Warn)

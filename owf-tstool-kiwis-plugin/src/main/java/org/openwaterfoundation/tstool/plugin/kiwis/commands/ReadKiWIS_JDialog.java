@@ -3,7 +3,7 @@
 /* NoticeStart
 
 OWF TSTool KiWIS Plugin
-Copyright (C) 2022 Open Water Foundation
+Copyright (C) 2022-2023 Open Water Foundation
 
 OWF TSTool KiWIS Plugin is free software:  you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@ NoticeEnd */
 package org.openwaterfoundation.tstool.plugin.kiwis.commands;
 
 import java.awt.Color;
+import java.awt.Desktop;
 import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -35,6 +36,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -66,6 +68,7 @@ import RTi.Util.Help.HelpViewer;
 import RTi.Util.IO.CommandProcessor;
 import RTi.Util.IO.PropList;
 import RTi.Util.Message.Message;
+import RTi.Util.Time.TimeInterval;
 
 /**
 Editor for the ReadKiWIS() command.
@@ -74,6 +77,7 @@ Editor for the ReadKiWIS() command.
 public class ReadKiWIS_JDialog extends JDialog
 implements ActionListener, DocumentListener, ItemListener, KeyListener, WindowListener
 {
+private SimpleJButton dataStoreDocumentation_JButton = null;
 private SimpleJButton __cancel_JButton = null;
 private SimpleJButton __ok_JButton = null;
 private SimpleJButton __help_JButton = null;
@@ -87,6 +91,9 @@ private JPanel __multipleTS_JPanel = null;
 private SimpleJComboBox __LocId_JComboBox = null;
 private JTextField __DataSource_JTextField;
 private SimpleJComboBox __TsShortName_JComboBox = null;
+private SimpleJComboBox __IrregularInterval_JComboBox = null;
+private SimpleJComboBox __Read24HourAsDay_JComboBox = null;
+private SimpleJComboBox __ReadDayAs24Hour_JComboBox = null;
 private JTextField __TSID_JTextField;
 private JTextField __InputStart_JTextField;
 private JTextField __InputEnd_JTextField;	
@@ -127,6 +134,16 @@ public void actionPerformed( ActionEvent event ) {
 
     if ( o == __cancel_JButton ) {
         response ( false );
+    }
+    else if ( o == dataStoreDocumentation_JButton ) {
+        try {
+            Desktop desktop = Desktop.getDesktop();
+            desktop.browse ( new URI(dataStoreDocumentation_JButton.getActionCommand()) );
+        }
+        catch ( Exception e ) {
+            Message.printWarning(1, null, "Unable to display KiWIS web services documentation using \"" +
+                dataStoreDocumentation_JButton.getActionCommand() + "\"" );
+        }
     }
 	else if ( o == __help_JButton ) {
 		HelpViewer.getInstance().showHelp("command", "ReadKiWIS",
@@ -248,6 +265,19 @@ private void checkGUIState() {
 		    DataType = "*";
 		}
 	}
+
+    // If datastore is selected and has the property for API documentation, enable the documentation buttons.
+    KiWISDataStore dataStore = getSelectedDataStore();
+    if ( dataStore != null ) {
+        String urlString = dataStore.getProperty ( "ServiceAPIDocumentationURI" );
+        if ( urlString == null ) {
+            this.dataStoreDocumentation_JButton.setEnabled(false);
+        }
+        else {
+            this.dataStoreDocumentation_JButton.setActionCommand(urlString);
+            this.dataStoreDocumentation_JButton.setEnabled(true);
+        }
+    }
 }
 
 /**
@@ -313,6 +343,18 @@ private void checkInput () {
 	if ( InputEnd.length() > 0 ) {
 		props.set ( "InputEnd", InputEnd );
 	}
+    String IrregularInterval = __IrregularInterval_JComboBox.getSelected();
+    if ( IrregularInterval.length() > 0 ) {
+        props.set ( "IrregularInterval", IrregularInterval );
+    }
+    String Read24HourAsDay = __Read24HourAsDay_JComboBox.getSelected();
+    if ( Read24HourAsDay.length() > 0 ) {
+        props.set ( "Read24HourAsDay", Read24HourAsDay );
+    }
+    String ReadDayAs24Hour = __ReadDayAs24Hour_JComboBox.getSelected();
+    if ( ReadDayAs24Hour.length() > 0 ) {
+        props.set ( "ReadDayAs24Hour", ReadDayAs24Hour );
+    }
     if ( whereCount > 0 ) {
         // Input filters are specified so check:
     	// - this is done in the input filter because that code is called from this command and main TSTool UI
@@ -379,6 +421,12 @@ private void commitEdits () {
 	__command.setCommandParameter ( "InputStart", InputStart );
 	String InputEnd = __InputEnd_JTextField.getText().trim();
 	__command.setCommandParameter ( "InputEnd", InputEnd );
+	String IrregularInterval = __IrregularInterval_JComboBox.getSelected();
+	__command.setCommandParameter (	"IrregularInterval", IrregularInterval );
+	String Read24HourAsDay = __Read24HourAsDay_JComboBox.getSelected();
+	__command.setCommandParameter (	"Read24HourAsDay", Read24HourAsDay );
+	String ReadDayAs24Hour = __ReadDayAs24Hour_JComboBox.getSelected();
+	__command.setCommandParameter (	"ReadDayAs24Hour", ReadDayAs24Hour );
 	//String Timezone = __Timezone_JTextField.getText().trim();
 	//__command.setCommandParameter ( "Timezone", Timezone );
 	String Debug = __Debug_JComboBox.getSelected();
@@ -566,6 +614,14 @@ private void initialize ( JFrame parent, ReadKiWIS_Command command ) {
 		"Requests may be constrained by the software to prevent unintended large bulk queries." ),
 		0, ++y, 7, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
    	
+    // Add buttons for the documentation:
+    // - the checkGUIState() method checks for and sets the URL in the button's action
+
+	this.dataStoreDocumentation_JButton = new SimpleJButton("KiWIS Documentation", this);
+	this.dataStoreDocumentation_JButton.setToolTipText("View the KiWIS documentation for the datastore in a web browser.");
+    JGUIUtil.addComponent(main_JPanel, this.dataStoreDocumentation_JButton,
+        0, ++y, 1, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+
     JGUIUtil.addComponent(main_JPanel, new JSeparator(SwingConstants.HORIZONTAL),
         0, ++y, 7, 1, 0, 0, insetsTLBR, GridBagConstraints.HORIZONTAL, GridBagConstraints.WEST);
    	
@@ -727,6 +783,56 @@ private void initialize ( JFrame parent, ReadKiWIS_Command command ) {
         1, y, 6, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
     JGUIUtil.addComponent(main_JPanel, new JLabel ( "Optional - overrides the global input end."),
         3, y, 3, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST );
+
+    JGUIUtil.addComponent(main_JPanel, new JLabel ( "Irregular interval:"),
+		0, ++y, 1, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.EAST);
+    List<String> irregInterval_List = new ArrayList<>( 3 );
+	irregInterval_List = TimeInterval.getTimeIntervalChoices(TimeInterval.UNKNOWN, TimeInterval.UNKNOWN, false, -1, true);
+	irregInterval_List.add(0,"");
+	__IrregularInterval_JComboBox = new SimpleJComboBox ( false );
+	__IrregularInterval_JComboBox.setToolTipText("Irregular interval to use instead of web service interval");
+	__IrregularInterval_JComboBox.setData ( irregInterval_List);
+	__IrregularInterval_JComboBox.select ( 0 );
+	__IrregularInterval_JComboBox.addActionListener ( this );
+    JGUIUtil.addComponent(main_JPanel, __IrregularInterval_JComboBox,
+		1, y, 2, 1, 1, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+    JGUIUtil.addComponent(main_JPanel, new JLabel (
+		"Optional - irregular interval for time series (default=web service interval)."),
+		3, y, 2, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+
+    JGUIUtil.addComponent(main_JPanel, new JLabel ( "Read 24Hour as 1Day:"),
+		0, ++y, 1, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.EAST);
+    List<String> read24Hour_List = new ArrayList<>( 3 );
+	read24Hour_List.add ( "" );
+	read24Hour_List.add ( __command._False );
+	read24Hour_List.add ( __command._True );
+	__Read24HourAsDay_JComboBox = new SimpleJComboBox ( false );
+	__Read24HourAsDay_JComboBox.setToolTipText("Whether to read 24Hour interval time series as 1Day interval");
+	__Read24HourAsDay_JComboBox.setData ( read24Hour_List);
+	__Read24HourAsDay_JComboBox.select ( 0 );
+	__Read24HourAsDay_JComboBox.addActionListener ( this );
+    JGUIUtil.addComponent(main_JPanel, __Read24HourAsDay_JComboBox,
+		1, y, 2, 1, 1, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+    JGUIUtil.addComponent(main_JPanel, new JLabel (
+		"Optional - read 24Hour as 1Day (default=" + __command._False + ")."),
+		3, y, 2, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+
+    JGUIUtil.addComponent(main_JPanel, new JLabel ( "Read day as 24Hour:"),
+		0, ++y, 1, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.EAST);
+    List<String> readDay_List = new ArrayList<>( 3 );
+	readDay_List.add ( "" );
+	readDay_List.add ( __command._False );
+	readDay_List.add ( __command._True );
+	__ReadDayAs24Hour_JComboBox = new SimpleJComboBox ( false );
+	__ReadDayAs24Hour_JComboBox.setToolTipText("Whether to read day interval time series as 24Hour interval");
+	__ReadDayAs24Hour_JComboBox.setData ( readDay_List);
+	__ReadDayAs24Hour_JComboBox.select ( 0 );
+	__ReadDayAs24Hour_JComboBox.addActionListener ( this );
+    JGUIUtil.addComponent(main_JPanel, __ReadDayAs24Hour_JComboBox,
+		1, y, 2, 1, 1, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+    JGUIUtil.addComponent(main_JPanel, new JLabel (
+		"Optional - read day as 24Hour  (default=" + __command._False + ")."),
+		3, y, 2, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
 
     /*
     JGUIUtil.addComponent(main_JPanel, new JLabel ( "Timezone:"),
@@ -1036,6 +1142,9 @@ private void refresh () {
 	String filterDelim = ";";
 	String InputStart = "";
 	String InputEnd = "";
+	String IrregularInterval = "";
+	String Read24HourAsDay = "";
+	String ReadDayAs24Hour = "";
 	//String Timezone = "";
 	String Debug = "";
 	PropList props = null;
@@ -1052,6 +1161,9 @@ private void refresh () {
 		//TSID = props.getValue ( "TSID" );
 		InputStart = props.getValue ( "InputStart" );
 		InputEnd = props.getValue ( "InputEnd" );
+		IrregularInterval = props.getValue ( "IrregularInterval" );
+		Read24HourAsDay = props.getValue ( "Read24HourAsDay" );
+		ReadDayAs24Hour = props.getValue ( "ReadDayAs24Hour" );
 		//Timezone = props.getValue ( "Timezone" );
 		Debug = props.getValue ( "Debug" );
         // The data store list is set up in initialize() but is selected here.
@@ -1214,6 +1326,78 @@ private void refresh () {
 		if ( InputEnd != null ) {
 			__InputEnd_JTextField.setText ( InputEnd );
 		}
+	    if ( JGUIUtil.isSimpleJComboBoxItem( __IrregularInterval_JComboBox, IrregularInterval, JGUIUtil.NONE, null, null ) ) {
+            //__IrregularInterval_JComboBox.select (index[0] );
+            __IrregularInterval_JComboBox.select (IrregularInterval);
+        }
+        else {
+            Message.printStatus(2,routine,"IrregularInterval=\"" + IrregularInterval + "\" is invalid.");
+            if ( (IrregularInterval == null) || IrregularInterval.equals("") ) {
+                // New command...select the default.
+                // Populating the list above selects the default that is appropriate so no need to do here.
+            	__IrregularInterval_JComboBox.select (0);
+            }
+            else {
+                // Bad user command.
+                Message.printWarning ( 1, routine, "Existing command references an invalid\n"+
+                  "IrregularInterval parameter \"" + Interval + "\".  Select a\ndifferent value or Cancel." );
+            	__IrregularInterval_JComboBox.select (0);
+            }
+        }
+	    if ( JGUIUtil.isSimpleJComboBoxItem( __Read24HourAsDay_JComboBox, Read24HourAsDay, JGUIUtil.NONE, null, null ) ) {
+            //__Read24HourAsDay_JComboBox.select (index[0] );
+            __Read24HourAsDay_JComboBox.select (Read24HourAsDay);
+        }
+        else {
+            Message.printStatus(2,routine,"Read24HourAsDay=\"" + Read24HourAsDay + "\" is invalid.");
+            if ( (Read24HourAsDay == null) || Read24HourAsDay.equals("") ) {
+                // New command...select the default.
+                // Populating the list above selects the default that is appropriate so no need to do here.
+            	__Read24HourAsDay_JComboBox.select (0);
+            }
+            else {
+                // Bad user command.
+                Message.printWarning ( 1, routine, "Existing command references an invalid\n"+
+                  "Read24HourAsDay parameter \"" + Interval + "\".  Select a\ndifferent value or Cancel." );
+            	__Read24HourAsDay_JComboBox.select (0);
+            }
+        }
+	    if ( JGUIUtil.isSimpleJComboBoxItem( __ReadDayAs24Hour_JComboBox, ReadDayAs24Hour, JGUIUtil.NONE, null, null ) ) {
+            //__ReadDayAs24Hour_JComboBox.select (index[0] );
+            __ReadDayAs24Hour_JComboBox.select (ReadDayAs24Hour);
+        }
+        else {
+            Message.printStatus(2,routine,"ReadDayAs24Hour=\"" + ReadDayAs24Hour + "\" is invalid.");
+            if ( (ReadDayAs24Hour == null) || ReadDayAs24Hour.equals("") ) {
+                // New command...select the default.
+                // Populating the list above selects the default that is appropriate so no need to do here.
+            	__ReadDayAs24Hour_JComboBox.select (0);
+            }
+            else {
+                // Bad user command.
+                Message.printWarning ( 1, routine, "Existing command references an invalid\n"+
+                  "ReadDayAs24Hour parameter \"" + Interval + "\".  Select a\ndifferent value or Cancel." );
+            	__ReadDayAs24Hour_JComboBox.select (0);
+            }
+        }
+	    if ( JGUIUtil.isSimpleJComboBoxItem( __Debug_JComboBox, Debug, JGUIUtil.NONE, null, null ) ) {
+            //__Debug_JComboBox.select (index[0] );
+            __Debug_JComboBox.select (Debug);
+        }
+        else {
+            Message.printStatus(2,routine,"Debug=\"" + Debug + "\" is invalid.");
+            if ( (Debug == null) || Debug.equals("") ) {
+                // New command...select the default.
+                // Populating the list above selects the default that is appropriate so no need to do here.
+            	__Debug_JComboBox.select (0);
+            }
+            else {
+                // Bad user command.
+                Message.printWarning ( 1, routine, "Existing command references an invalid\n"+
+                  "Debug parameter \"" + Interval + "\".  Select a\ndifferent value or Cancel." );
+            	__Debug_JComboBox.select (0);
+            }
+        }
 	}
 	// Regardless, reset the command from the fields.
     DataStore = __DataStore_JComboBox.getSelected();
@@ -1296,6 +1480,12 @@ private void refresh () {
 	props.add ( "InputStart=" + InputStart );
 	InputEnd = __InputEnd_JTextField.getText().trim();
 	props.add ( "InputEnd=" + InputEnd );
+	IrregularInterval = __IrregularInterval_JComboBox.getSelected();
+	props.add ( "IrregularInterval=" + IrregularInterval );
+	Read24HourAsDay = __Read24HourAsDay_JComboBox.getSelected();
+	props.add ( "Read24HourAsDay=" + Read24HourAsDay );
+	ReadDayAs24Hour = __ReadDayAs24Hour_JComboBox.getSelected();
+	props.add ( "ReadDayAs24Hour=" + ReadDayAs24Hour );
 	//Timezone = __Timezone_JTextField.getText().trim();
 	//props.add ( "Timezone=" + Timezone );
 	Debug = __Debug_JComboBox.getSelected();
@@ -1309,8 +1499,8 @@ private void refresh () {
 
 /**
 React to the user response.
-@param ok if false, then the edit is canceled.  If true, the edit is committed
-and the dialog is closed.
+@param ok if false, then the edit is canceled.
+If true, the edit is committed and the dialog is closed.
 */
 private void response ( boolean ok ) {
 	__ok = ok;	// Save to be returned by ok().

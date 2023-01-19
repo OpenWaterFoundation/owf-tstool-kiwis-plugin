@@ -5,9 +5,12 @@
 StartLog(LogFile="Results/test-ReadKiWIS-Northern-NW220-1Day.tstool.log")
 # Read the full period.
 SetInputPeriod(InputStart="2022-01-01",InputEnd="2022-01-15")
-ReadKiWIS(DataStore="KiWIS-northern",DataType="rhum_vais_Avg",Interval="*",LocId="NW220",TsShortName="Day.Mean")
+ReadKiWIS(DataStore="KiWIS-northern",DataType="rhum_vais_Avg",Interval="1Day",LocId="NW220",TsShortName="Day.Mean")
 # Uncomment the following to write the expected results.
 # WriteDateValue(OutputFile="expected-results/test-ReadKiWIS-Northern-NW220-1Day-out.dv")
 WriteDateValue(OutputFile="results/test-ReadKiWIS-Northern-NW220-1Day-out.dv")
 # Compare the results with expected results.
 CompareFiles(InputFile1="expected-results/test-ReadKiWIS-Northern-NW220-1Day-out.dv",InputFile2="results/test-ReadKiWIS-Northern-NW220-1Day-out.dv",IfDifferent=Warn)
+# Read the data using WebGet to visually confirm the results.
+WebGet(URI="https://data.northernwater.org/KiWIS/KiWIS?datasource=0&service=kisters&type=queryServices&request=getTimeseriesValues&format=csv&ts_id=25099010&returnfields=Timestamp%2CValue%2CQuality+Code%2CInterpolation+Type&from=2022-01-01+00%3A00&to=2022-01-15+00%3A00",EncodeURI=False,LocalFile="results/test-ReadKiWIS-Northern-NW220-1Day.csv")
+ReadTableFromDelimitedFile(TableID="WebGetTable",InputFile="results/test-ReadKiWIS-Northern-NW220-1Day.csv",Delimiter=";",ColumnNames="Timestamp,Value,Quality Code,Interpolation Type")
