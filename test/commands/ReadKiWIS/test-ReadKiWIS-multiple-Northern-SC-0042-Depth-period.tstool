@@ -1,0 +1,15 @@
+# Test reading a KiWIS time series:
+# - read using the multiple time series table but read a single Depth time series
+# - set the period in the command so that results are predictable
+# - use data from Northern Water system, irregular interval
+StartLog(LogFile="Results/test-ReadKiWIS-multiple-Northern-SC-0042-Depth-period.tstool.log")
+# Read a period specified in the command.
+ReadKiWIS(DataStore="KiWIS-northern",DataType="Depth",Interval="IrregSecond",Where1="station_no;Matches;SC-0042",Where2="ts_shortname;Matches;Final_USGS",Alias="%L-%T",InputStart="2022-05-13 00:00",InputEnd="2022-05-14 12:00")
+# Uncomment the following to write the expected results.
+# WriteDateValue(OutputFile="expected-results/test-ReadKiWIS-multiple-Northern-SC-0042-Depth-period-out.dv")
+WriteDateValue(OutputFile="results/test-ReadKiWIS-multiple-Northern-SC-0042-Depth-period-out.dv")
+# Compare the results with expected results.
+CompareFiles(InputFile1="expected-results/test-ReadKiWIS-multiple-Northern-SC-0042-Depth-period-out.dv",InputFile2="results/test-ReadKiWIS-multiple-Northern-SC-0042-Depth-period-out.dv",IfDifferent=Warn)
+# Read the web service data using WebGet to visually confirm the results.
+WebGet(URI="https://data.northernwater.org/KiWIS/KiWIS?datasource=0&service=kisters&type=queryServices&request=getTimeseriesValues&format=csv&ts_id=34709010&returnfields=Timestamp%2CValue%2CQuality+Code%2CInterpolation+Type&from=2022-05-13+00%3A00&to=2022-05-14+12%3A00",EncodeURI=False,LocalFile="results/test-ReadKiWIS-multiple-Northern-SC-0042-Depth-period.csv")
+ReadTableFromDelimitedFile(TableID="WebGetTable",InputFile="results/test-ReadKiWIS-multiple-Northern-SC-0042-Depth-period.csv",Delimiter=";",ColumnNames="Timestamp,Value,Quality Code,Interpolation Type")

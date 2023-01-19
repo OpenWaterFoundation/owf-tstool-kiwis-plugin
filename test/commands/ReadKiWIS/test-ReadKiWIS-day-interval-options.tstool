@@ -1,0 +1,61 @@
+# Test reading a KiWIS time series
+# - read a single daily time series
+# - set the period so that results are predictable
+# - use data from Northern Water system
+StartLog(LogFile="Results/test-ReadKiWIS-day-interval-options.tstool.log")
+# Read the full period.
+SetInputPeriod(InputStart="2022-01-01",InputEnd="2022-03-15")
+# - the same daily interval time series is read different ways
+#
+# TSID:
+# - default behavior is to shift the hour 0 value of a day to the previous day and discard the time
+NW220.KiWIS.temp_vais_Avg-'Day.Mean'.1Day~KiWIS-northern
+#
+# ReadKiWIS command:
+# - similar to TSID, default behavior is to shift the hour 0 value of a day to the previous day and discard the time
+# - the time series alias is "default"
+ReadKiWIS(DataStore="KiWIS-northern",DataType="temp_vais_Avg",Interval="1Day",LocId="NW220",TsShortName="Day.Mean",Alias="default")
+#
+# ReadKiWIS command:
+# - read using an output interval of IrregHour
+# - the date and time of the original time series is retained as hour 0 of next day for midnight of a day
+# - the time precision is set to hour
+# - the time series alias is "IrregHour"
+ReadKiWIS(DataStore="KiWIS-northern",DataType="temp_vais_Avg",Interval="1Day",LocId="NW220",TsShortName="Day.Mean",Alias="IrregHour",IrregularInterval="IrregHour")
+# ReadKiWIS command:
+# - read daily time series but output as 24Hour interval
+# - the date and time of the original time series is retained as hour 0 of next day for midnight of a day
+# - the time precision is set to hour
+# - the time series alias is "ReadDayAs24Hour"
+ReadKiWIS(DataStore="KiWIS-northern",DataType="temp_vais_Avg",Interval="1Day",LocId="NW220",TsShortName="Day.Mean",Alias="ReadDayAs24Hour",ReadDayAs24Hour=True)
+#
+# Compare the daily time series.
+SelectTimeSeries(TSList=TSPosition,TSPosition="1-2",DeselectAllFirst=True)
+# Uncomment the following to write the expected results for hourly and day interval files.
+# WriteDateValue(TSList=SelectedTS,OutputFile="expected-results/test-ReadKiWIS-day-interval-options-day-out.dv")
+WriteDateValue(TSList=SelectedTS,OutputFile="results/test-ReadKiWIS-day-interval-options-day-out.dv")
+# Compare the results with expected results.
+CompareFiles(InputFile1="expected-results/test-ReadKiWIS-day-interval-options-day-out.dv",InputFile2="results/test-ReadKiWIS-day-interval-options-day-out.dv",IfDifferent=Warn)
+#
+# Compare the irregular hour time series.
+SelectTimeSeries(TSList=TSPosition,TSPosition="3",DeselectAllFirst=True)
+# Uncomment the following to write the expected results for hourly and day interval files.
+# WriteDateValue(TSList=SelectedTS,OutputFile="expected-results/test-ReadKiWIS-day-interval-options-irreghour-out.dv")
+WriteDateValue(TSList=SelectedTS,OutputFile="results/test-ReadKiWIS-day-interval-options-irreghour-out.dv")
+# Compare the results with expected results.
+CompareFiles(InputFile1="expected-results/test-ReadKiWIS-day-interval-options-irreghour-out.dv",InputFile2="results/test-ReadKiWIS-day-interval-options-irreghour-out.dv",IfDifferent=Warn)
+#
+# Compare the hourly time series.
+SelectTimeSeries(TSList=TSPosition,TSPosition="4",DeselectAllFirst=True)
+# Uncomment the following to write the expected results for hourly and day interval files.
+# WriteDateValue(TSList=SelectedTS,OutputFile="expected-results/test-ReadKiWIS-day-interval-options-hour-out.dv")
+WriteDateValue(TSList=SelectedTS,OutputFile="results/test-ReadKiWIS-day-interval-options-hour-out.dv")
+# Compare the results with expected results.
+CompareFiles(InputFile1="expected-results/test-ReadKiWIS-day-interval-options-hour-out.dv",InputFile2="results/test-ReadKiWIS-day-interval-options-hour-out.dv",IfDifferent=Warn)
+#
+# The following commands read the time series values into a table to allow for comparison:
+# - see the time series properties ts.GetTimeSeriesValuesUrl property for the URL
+# - DO NOT url-encode the URL because it is already encoded
+# - even though csv format is requested, semi-colon is used as the delimiter
+WebGet(URI="https://data.northernwater.org/KiWIS/KiWIS?datasource=0&service=kisters&type=queryServices&request=getTimeseriesValues&format=csv&ts_id=1062010&returnfields=Timestamp%2CValue%2CQuality+Code%2CInterpolation+Type&from=2022-01-01+00%3A00&to=2022-03-15+00%3A00",EncodeURI=False,LocalFile="results/example-day-interval-options.csv")
+ReadTableFromDelimitedFile(TableID="example-day-interval-options",InputFile="results/example-day-interval-options.csv",Delimiter=";",ColumnNames="Timestamp,Value,Quality Code,Interpolation Type")

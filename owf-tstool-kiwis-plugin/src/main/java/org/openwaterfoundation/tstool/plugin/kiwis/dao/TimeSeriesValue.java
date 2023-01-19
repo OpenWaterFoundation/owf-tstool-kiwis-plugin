@@ -3,7 +3,7 @@
 /* NoticeStart
 
 OWF TSTool KiWIS Plugin
-Copyright (C) 2022 Open Water Foundation
+Copyright (C) 2022-2023 Open Water Foundation
 
 OWF TSTool KiWIS Plugin is free software:  you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -32,7 +32,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class TimeSeriesValue {
 	/**
 	 * "timestamp"
-	 * 
+	 *
 	 * Use a String and parse to a DateTime when adding to the TS object.
 	 */
 	@JsonProperty("timestamp")
@@ -40,7 +40,7 @@ public class TimeSeriesValue {
 
 	/**
 	 * "value"
-	 * 
+	 *
 	 * Use a String and parse to a double when adding to the TS object.
 	 */
 	@JsonProperty("value")
@@ -53,54 +53,94 @@ public class TimeSeriesValue {
 	private String qualityCode = null;
 
 	/**
+	 * "Interpolation Type" as number
+	 */
+	//@JsonProperty("")
+	private int interpolationTypeNum = -1;
+
+	/**
+	 * "Interpolation Type" as enumeration
+	 */
+	//@JsonProperty("")
+	private InterpolationType interpolationType= InterpolationType.UNKNOWN;
+
+	/**
 	 * Default constructor used by Jackson.
 	 */
 	public TimeSeriesValue () {
 	}
 
 	/**
-	 * Return the timestamp.
-	 * @return the timestamp. 
+	 * Return the interpolation type enumeration.
+	 * @return the interpolation type enumeration.
 	 */
-	public String getTimestamp () {
-		return this.timestamp;
+	public InterpolationType getInterpolationType () {
+		return this.interpolationType;
+	}
+
+	/**
+	 * Return the interpolation type number.
+	 * @return the interpolation type number.
+	 */
+	public int getInterpolationTypeNum () {
+		return this.interpolationTypeNum;
 	}
 
 	/**
 	 * Return the quality code.
-	 * @return the quality code. 
+	 * @return the quality code.
 	 */
 	public String getQualityCode () {
 		return this.qualityCode;
 	}
 
 	/**
+	 * Return the timestamp.
+	 * @return the timestamp.
+	 */
+	public String getTimestamp () {
+		return this.timestamp;
+	}
+
+	/**
 	 * Return the value.
-	 * @return the value. 
+	 * @return the value.
 	 */
 	public String getValue () {
 		return this.value;
 	}
 
 	/**
-	 * Set the timestamp.
-	 * @param timestamp. 
+	 * Set the interpolation type.
+	 * @param interpolationTypeNum interpolation type as a number (e.g., 102).
 	 */
-	public void setTimestamp ( String timestamp ) {
-		this.timestamp = timestamp;
+	public void setInterpolationType ( int interpolationTypeNum ) {
+		// Set the numeric interpolation type.
+		this.interpolationTypeNum = interpolationTypeNum;
+		// Also set the enumeration.
+		this.interpolationType = InterpolationType.valueOf(this.interpolationTypeNum);
 	}
 
 	/**
 	 * Set the quality code.
-	 * @param quality code. 
+	 * @param quality code.
 	 */
 	public void setQualityCode ( String qualityCode ) {
 		this.qualityCode = qualityCode;
 	}
 
 	/**
+	 * Set the timestamp.
+	 * @param timestamp.
+	 */
+	public void setTimestamp ( String timestamp ) {
+		this.timestamp = timestamp;
+	}
+
+
+	/**
 	 * Set the value.
-	 * @param value. 
+	 * @param value.
 	 */
 	public void setValue ( String value ) {
 		this.value = value;

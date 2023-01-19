@@ -1,3 +1,25 @@
+// JsonUtil - JSON utility functions
+
+/* NoticeStart
+
+OWF TSTool KiWIS Plugin
+Copyright (C) 2022-2023 Open Water Foundation
+
+OWF TSTool KiWIS Plugin is free software:  you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    OWF TSTool KiWIS Plugin is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with OWF TSTool KiWIS Plugin.  If not, see <https://www.gnu.org/licenses/>.
+
+NoticeEnd */
+
 package org.openwaterfoundation.tstool.plugin.kiwis.util;
 
 import java.util.Map;

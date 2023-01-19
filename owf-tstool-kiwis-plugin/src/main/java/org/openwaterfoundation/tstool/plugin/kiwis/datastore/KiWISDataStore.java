@@ -3,7 +3,7 @@
 /* NoticeStart
 
 OWF TSTool KiWIS Plugin
-Copyright (C) 2022 Open Water Foundation
+Copyright (C) 2022-2023 Open Water Foundation
 
 OWF TSTool KiWIS Plugin is free software:  you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.openwaterfoundation.tstool.plugin.kiwis.PluginMeta;
+import org.openwaterfoundation.tstool.plugin.kiwis.dao.InterpolationType;
 import org.openwaterfoundation.tstool.plugin.kiwis.dao.Parameter;
 import org.openwaterfoundation.tstool.plugin.kiwis.dao.ParameterType;
 import org.openwaterfoundation.tstool.plugin.kiwis.dao.QualityCode;
@@ -65,6 +66,7 @@ import RTi.Util.IO.RequirementCheck;
 import RTi.Util.Message.Message;
 import RTi.Util.String.StringUtil;
 import RTi.Util.Time.DateTime;
+import RTi.Util.Time.TimeInterval;
 import riverside.datastore.AbstractWebServiceDataStore;
 import riverside.datastore.DataStoreRequirementChecker;
 import riverside.datastore.PluginDataStore;
@@ -72,9 +74,14 @@ import riverside.datastore.PluginDataStore;
 public class KiWISDataStore extends AbstractWebServiceDataStore implements DataStoreRequirementChecker, PluginDataStore {
 
 	/**
-	 * Standard request parameters.
+	 * Standard request parameters:
+	 * - as of version 1.0.1, everything except the query parameters are in the configuration file
+	 *   to allow flexibility if the KiWIS URL changes
+	 * - the common request parameters will include at least the ? so additional query parameters can be
+	 *   appended with "&parameter=value" for specific services
 	 */
-	private final String COMMON_REQUEST_PARAMETERS = "?service=kisters&type=queryServices&datasource=0";
+	//private final String COMMON_REQUEST_PARAMETERS = "?service=kisters&type=queryServices&datasource=0";
+	private final String COMMON_REQUEST_PARAMETERS = "";
 
 	/**
 	 * Properties for the plugin, used to help with application integration.
@@ -150,6 +157,36 @@ public class KiWISDataStore extends AbstractWebServiceDataStore implements DataS
 
 	    readGlobalData();
 	}
+	
+	/**
+	 * Adjust a date/time for the interpolation type:
+	 * - TSTool uses date/time at the end of interval for regular time series
+	 * - KiWIS regular interval (equidistant) time series use the interpolation type to indicate
+	 *   whether the timestamp is at the interval beginning or end
+	 * @param intervalBase time series interval base
+	 * @param intervalMult time series interval multiplier
+	 * @param dateTime the DateTime to adjust, will be modified on output if adjusted
+	 * @param interpolationType the interpolation type for regular interval time series
+	 * @return 1 if the time is adjusted 0 if not
+	 */
+    private int adjustTimeForInterpolationType ( int intervalBase, int intervalMult,
+    	DateTime dateTime, InterpolationType interpolationType ) {
+    	if ( dateTime == null ) {
+    		// Null timestamp so can't do anything.
+    		return 0;
+    	}
+    	else {
+    		if ( interpolationType.getTimestampPos() == -1 ) {
+    			// Data value timestamp is at the beginning of the interval:
+    			// - add the interval to the timestamp to move to end of interval
+    			dateTime.addInterval(intervalBase, intervalMult);
+    			return 1;
+    		}
+    		else {
+    			return 0;
+    		}
+    	}
+    }
 
 	/**
  	* Check the database requirement for DataStoreRequirementChecker interface, for example one of:
@@ -291,7 +328,15 @@ public class KiWISDataStore extends AbstractWebServiceDataStore implements DataS
 		
 		String mult = null; // Multiplier.
 		char baseChar; // Interval base character in tsSpacing
-		if ( (tsSpacing.length() == 4) && tsSpacing.startsWith("PT") ) {
+		if ( (tsSpacing == null) || tsSpacing.isEmpty() ) {
+			// "Nonequidistant" time series:
+			// - treat as irregular in TSTool
+			// - use IrregSecond because don't have any other information for interval
+			interval = "IrregSecond";
+			// Return here because later code deals with regular interval base and multiplier.
+			return interval;
+		}
+		else if ( (tsSpacing.length() == 4) && tsSpacing.startsWith("PT") ) {
 			// Time.
 			mult = tsSpacing.substring(2,3);
 			baseChar = tsSpacing.charAt(3);
@@ -484,22 +529,39 @@ public class KiWISDataStore extends AbstractWebServiceDataStore implements DataS
 	 * Return the list of time series data interval strings.
 	 * Interval strings match TSTool conventions such as NewTimeSeries command, which uses "1Hour" rather than "1hour".
 	 * This should result from calls like:  TimeInterval.getName(TimeInterval.HOUR, 0)
-	 * Currently only the wildcard is returned because intervals cannot be used to filter the getTimeseriesList web service
-	 * (without additional work).
 	 * @param dataType data type string to filter the list of data intervals.
 	 * If null, blank, or "*" the data type is not considered when determining the list of data intervals.
 	 * @includeWildcards if true, include "*" wildcard.
 	 */
 	public List<String> getTimeSeriesDataIntervalStrings(String dataType, boolean includeWildcards ) {
 		String routine = getClass().getSimpleName() + ".getTimeSeriesDataIntervalStrings";
-		int pos = dataType.indexOf(" - ");
-		if ( pos > 0 ) {
-			// Data type includes SHEF code, for example:  WaterLevelRiver - HG
-			dataType = dataType.substring(0, pos).trim();
-		}
-		// Else use the dataType as is.
 		List<String> dataIntervals = new ArrayList<>();
 		Message.printStatus(2, routine, "Getting interval strings for data type \"" + dataType + "\"");
+		
+		// Only check datatype if not a wildcard.
+		boolean doCheckDataType = false;
+		if ( (dataType != null) && !dataType.isEmpty() && !dataType.equals("*") ) {
+			doCheckDataType = true;
+		}
+		
+		// Use the cached time series catalog read at startup.
+		List<TimeSeriesCatalog> tscatalogList = getTimeSeriesCatalog(false);
+		for ( TimeSeriesCatalog tscatalog : tscatalogList ) {
+			if ( doCheckDataType ) {
+				if ( !dataType.equals(tscatalog.getStationParameterNo())) {
+					// Data type does not match 'stationparameter_no'.
+					continue;
+				}
+			}
+			// Only add the interval if not already in the list.
+			if ( !StringUtil.isInList(dataIntervals, tscatalog.getDataInterval())) {
+				dataIntervals.add(tscatalog.getDataInterval());
+			}
+		}
+		
+		// Sort the intervals:
+		// - TODO smalers need to sort by time
+		Collections.sort(dataIntervals,String.CASE_INSENSITIVE_ORDER);
 
 		if ( includeWildcards ) {
 			// Always allow querying list of time series for all intervals:
@@ -535,73 +597,38 @@ public class KiWISDataStore extends AbstractWebServiceDataStore implements DataS
 	public List<String> getTimeSeriesDataTypeStrings(String dataInterval, boolean includeWildcards ) {
 		String routine = getClass().getSimpleName() + ".getTimeSeriesDataTypeStrings";
 
-		boolean useStationParameters = true;
 		List<String> dataTypes = new ArrayList<>();
-		if ( useStationParameters ) {
-			// Read the parameter list and use the stationparameter_no,
-			// which is consistent with the 'ts_path' and TSTool TSID.
-			List<Parameter> parameterList = null;
-			try {
-				parameterList = readParameterList();
-			}
-			catch ( Exception e ) {
-				Message.printWarning(3, routine, "Error reading parameter list (" + e + ")." );
-				Message.printWarning(3, routine, e );
-			}
+		// Read the station parameter list and use the stationparameter_no,
+		// which is consistent with the 'ts_path' and TSTool TSID.
+		List<Parameter> parameterList = null;
+		try {
+			parameterList = readParameterList();
+		}
+		catch ( Exception e ) {
+			Message.printWarning(3, routine, "Error reading parameter list (" + e + ")." );
+			Message.printWarning(3, routine, e );
+		}
 
-			// Create the data type list.
-			boolean found = false;
-			String stationParameterName = null;
-			String stationParameterNo = null;
-			if ( parameterList != null ) {
-				for ( Parameter p : parameterList ) {
-					stationParameterName = p.getStationParameterName();
-					stationParameterNo = p.getStationParameterNo();
-					found = false;
-					for ( String dataType : dataTypes ) {
-						//if ( stationParameterName.equals(dataType) ) {
-						if ( stationParameterNo.equals(dataType) ) {
-							found = true;
-							break;
-						}
-					}
-					if ( !found ) {
-						//Message.printStatus(2, routine, "Adding parameter name \"" + p.getStationParameterName() + "\"");
-						//dataTypes.add(p.getStationParameterName());
-						dataTypes.add(p.getStationParameterNo());
+		// Create the data type list.
+		boolean found = false;
+		String stationParameterName = null;
+		String stationParameterNo = null;
+		if ( parameterList != null ) {
+			for ( Parameter p : parameterList ) {
+				stationParameterName = p.getStationParameterName();
+				stationParameterNo = p.getStationParameterNo();
+				found = false;
+				for ( String dataType : dataTypes ) {
+					//if ( stationParameterName.equals(dataType) ) {
+					if ( stationParameterNo.equals(dataType) ) {
+						found = true;
+						break;
 					}
 				}
-			}
-		}
-		else {
-			// Read the parameter type list.
-			List<ParameterType> parameterTypeList = null;
-			try {
-				parameterTypeList = readParameterTypeList();
-			}
-			catch ( Exception e ) {
-				Message.printWarning(3, routine, "Error reading parameter type list (" + e + ")." );
-				Message.printWarning(3, routine, e );
-			}
-
-			// Create the data type list.
-			String parameterTypeName = null;
-			boolean found = false;
-			if ( parameterTypeList != null ) {
-				for ( ParameterType pt : parameterTypeList ) {
-
-					parameterTypeName = pt.getParameterTypeName();
-					found = false;
-					for ( String dataType : dataTypes ) {
-						if ( parameterTypeName.equals(dataType) ) {
-							found = true;
-							break;
-						}
-					}
-					if ( !found ) {
-						//Message.printStatus(2, routine, "Adding parameter type name \"" + pt.getParameterTypeName() + "\"");
-						dataTypes.add(parameterTypeName);
-					}
+				if ( !found ) {
+					//Message.printStatus(2, routine, "Adding parameter name \"" + p.getStationParameterName() + "\"");
+					//dataTypes.add(p.getStationParameterName());
+					dataTypes.add(p.getStationParameterNo());
 				}
 			}
 		}
@@ -1037,45 +1064,117 @@ public class KiWISDataStore extends AbstractWebServiceDataStore implements DataS
 
     /**
      * Read a single time series given its time series identifier using default read properties.
-     * @param tsid time series identifier.  The location may be stationNumId or stationNumId-pointTagName or
-     * 'stationNumId-pointTagName.with.periods'.
+     * @param tsid time series identifier.
      * @param readStart start of read, will be set to 'periodStart' service parameter.
      * @param readEnd end of read, will be set to 'periodEnd' service parameter.
      * @return the time series or null if not read
      */
     public TS readTimeSeries ( String tsid, DateTime readStart, DateTime readEnd, boolean readData ) {
+    	String routine = getClass().getSimpleName() + ".readTimeSeries";
     	try {
     		return readTimeSeries ( tsid, readStart, readEnd, readData, null );
     	}
     	catch ( Exception e ) {
     		// Throw a RuntimeException since the method interface does not include an exception type.
+    		Message.printWarning(2, routine, e);
     		throw new RuntimeException ( e );
     	}
     }
 
     /**
      * Read a single time series given its time series identifier.
-     * @param tsid time series identifier.  The location may be stationNumId or stationNumId-pointTagName or
-     * 'stationNumId-pointTagName.with.periods'.
+     * @param tsidReq requested time series identifier.
+     * The output time series may be different depending on the requested properties.
      * @param readStart start of read, will be set to 'periodStart' service parameter.
      * @param readEnd end of read, will be set to 'periodEnd' service parameter.
      * @param readProperties additional properties to control the query:
      * <ul>
-     * <li> Not yet implemented.</li>
+     * <li> "IrregularInterval" - irregular interval (e.g., "IrregHour" to use instead of TSID interval,
+     *      where the TSID intervals corresponds to the web services.</li>
+     * <li> "Read24HourAsDay" - string "false" (default) or "true" indicating whether 24Hour interval time series
+     *      should be output as 1Day time series.</li>
+     * <li> "ReadDayAs24Hour" - string "false" (default) or "true" indicating whether day interval time series
+     *      should be output as 24Hour time series.</li>
      * <li> "Debug" - if true, turn on debug for the query</li>
      * </ul>
      * @return the time series or null if not read
      */
-    public TS readTimeSeries ( String tsid, DateTime readStart, DateTime readEnd,
+    public TS readTimeSeries ( String tsidReq, DateTime readStart, DateTime readEnd,
     	boolean readData, HashMap<String,Object> readProperties ) throws Exception {
-    	//throws IOException {
     	String routine = getClass().getSimpleName() + ".readTimeSeries";
-    	
+
+    	// Get the properties of interest:
+    	// - corresponds to parameters in the ReadKiWIS command
+    	// - TSID command uses the defaults and may result in more exceptions because TSID can only handle general behavior
+    	if ( readProperties == null ) {
+    		// Create an empty hashmap if necessary to avoid checking for null below.
+    		readProperties = new HashMap<>();
+    	}
+    	String IrregularInterval = null;
+    	TimeInterval irregularInterval = null;
+    	boolean read24HourAsDay = false;
+    	boolean readDayAs24Hour = false;
+    	Object object = readProperties.get("IrregularInterval");
+    	if ( object != null ) {
+    		IrregularInterval = (String)object;
+    		irregularInterval = TimeInterval.parseInterval(IrregularInterval);
+    	}
+    	object = readProperties.get("Read24HourAsDay");
+    	if ( object != null ) {
+    		String Read24HourAsDay = (String)object;
+    		if ( Read24HourAsDay.equalsIgnoreCase("true") ) {
+    			read24HourAsDay = true;
+    		}
+    	}
+    	object = readProperties.get("ReadDayAs24Hour");
+    	if ( object != null ) {
+    		String ReadDayAs24Hour = (String)object;
+    		if ( ReadDayAs24Hour.equalsIgnoreCase("true") ) {
+    			readDayAs24Hour = true;
+    		}
+    	}
+
     	TS ts = null;
     	
-    	// Create a time series identifier.
-    	TSIdent tsident = TSIdent.parseIdentifier(tsid);
-    	String locType = tsident.getLocationType();
+    	// Create a time series identifier for the requested TSID:
+    	// - the actual output may be set to a different identifier based on the above properties
+    	// - also save interval base and multiplier for the original request
+    	TSIdent tsidentReq = TSIdent.parseIdentifier(tsidReq);
+   		int intervalBaseReq = tsidentReq.getIntervalBase();
+   		int intervalMultReq = tsidentReq.getIntervalMult();
+   		boolean isRegularIntervalReq = TimeInterval.isRegularInterval(intervalBaseReq);
+    	
+    	// Up front, check for invalid request and throw exceptions:
+   		// - some cases are OK as long as IrregularInterval was specified in ReadKiWIS
+
+    	if ( tsidentReq.getInterval().isEmpty() ) {
+    		// Version 1.0.0 of the plugin allowed blank interval in TSID but this is no longer accepted.
+   			throw new RuntimeException ( "TSID (" + tsidReq + ") has no interval - cannot read time series." );
+    	}
+    	else if ( (irregularInterval != null) && !TimeInterval.isRegularInterval(intervalBaseReq)) {
+   			throw new RuntimeException ( "TSID (" + tsidReq
+   				+ ") is an irregular interval ime series - it is redundant to request IrregularInterval." );
+    	}
+    	else if ( (intervalBaseReq == TimeInterval.DAY) && (intervalMultReq != 1) && (irregularInterval == null) ) {
+   			throw new RuntimeException ( "TSID ( " + tsidReq
+   				+ ") reading NDay interval is not supported.  Use ReadKiWIS(IrregularInterval=IrregDay) or IrregHour." );
+   		}
+    	else if ( readDayAs24Hour && !((intervalBaseReq == TimeInterval.DAY) && (intervalMultReq == 1)) ) {
+   			throw new RuntimeException ( "TSID (" + tsidReq + ") requesting reading day as 24 hour but input is not 1Day interval." );
+    	}
+    	else if ( read24HourAsDay && !((intervalBaseReq == TimeInterval.HOUR) && (intervalMultReq == 24)) ) {
+   			throw new RuntimeException ( "TSID (" + tsidReq + ") requesting reading 24 hour as day but input is not 24Hour interval." );
+    	}
+   		else if ( (intervalBaseReq == TimeInterval.MONTH) && (irregularInterval == null) ) {
+   			throw new RuntimeException ( "TSID ( " + tsidReq
+   				+ ") reading Month interval is not supported.  Use ReadKiWIS(IrregularInterval=IrregMonth)" );
+   		}
+   		else if ( (intervalBaseReq == TimeInterval.YEAR) && (irregularInterval == null) ) {
+   			throw new RuntimeException ( "TSID ( " + tsidReq +
+   				") reading Year interval is not supported.  Use ReadKiWIS(IrregularInterval=IrregYear)" );
+   		}
+    	
+    	String locType = tsidentReq.getLocationType();
     	Integer kiwisTsid = null; // KiWIS ts_id, used if location type is used.
     	String kiwisTsPath = null; // KiWIS ts_path, used if location type is NOT used.
     	// Time series catalog for the single matching time series.
@@ -1083,7 +1182,7 @@ public class KiWISDataStore extends AbstractWebServiceDataStore implements DataS
     	if ( locType.equalsIgnoreCase("ts_id") ) {
     		// KiWIS ts_id uniquely identifies the time series:
     		// - the location is like ts_id:ts_id  (where first 5 characters are 'ts_id:'
-    		kiwisTsid = new Integer(tsident.getMainLocation());
+    		kiwisTsid = new Integer(tsidentReq.getMainLocation());
     		// Read the time series list for the single time series.
     		String dataTypeReq = null;
     		String dataIntervalReq = null;
@@ -1108,8 +1207,8 @@ public class KiWISDataStore extends AbstractWebServiceDataStore implements DataS
     		// KiWIS ts_path parts are used in the TSID:
     		// - station_no.stationparamer_no-ts_shortname
     		// - if necessary: station_no.'stationparamer_no'-'ts_shortname'
-    		String stationNo = tsident.getLocation();
-    		List<String> parts = StringUtil.breakStringList(tsident.getType(), "-", StringUtil.DELIM_ALLOW_STRINGS);
+    		String stationNo = tsidentReq.getLocation();
+    		List<String> parts = StringUtil.breakStringList(tsidentReq.getType(), "-", StringUtil.DELIM_ALLOW_STRINGS);
     		String stationParameterNo = parts.get(0);
     		String tsShortName = parts.get(1);
     		// Read the catalog matching the KiWIS 'ts_path'.
@@ -1127,40 +1226,71 @@ public class KiWISDataStore extends AbstractWebServiceDataStore implements DataS
     			throw new RuntimeException ( "Matched " + tslist.size() + " time series for ts_id = " + kiwisTsid + ", expecting 1.");
     		}
     		else {
-    			// Matched a single time series so can continue.
+    			// Matched a single time series so can continue:
     			// - ts_id is used below to read data
     			tscatalog = tslist.get(0);
     			kiwisTsid = tscatalog.getTsId();
     		}
     	}
 
-    	// If the interval is not known, set to irregular so data values will be set
-    	if ( tsident.getInterval().isEmpty() ) {
-    		tsident.setInterval("IrregSecond");
+    	// Create the time series and set properties:
+    	// - above code used "req" (requested) variables based on the requested TSID
+    	// - from this point forward the "out" variables are used,
+    	//   in case IrregularInterval, Read24HourAsDay, or ReadDayAs24Hour properties were specified
+
+    	TSIdent tsidentOut = tsidentReq;
+    	String tsidOut = tsidentOut.toString();
+    	boolean outIsDifferent = false;
+    	if ( irregularInterval != null ) {
+    		// A different interval than the requested TSID is being used.
+    		// Copy the requested identifier.
+    		tsidentOut = new TSIdent(tsidentReq);
+    		// Reset the interval, will be OK based on parsing at the top of the method.
+    		tsidentOut.setInterval(IrregularInterval);
+    		tsidOut = tsidentOut.toString();
+    		outIsDifferent = true;
+    	}
+    	else if ( readDayAs24Hour ) {
+    		// A different interval than the requested TSID is being used.
+    		// Copy the requested identifier.
+    		tsidentOut = new TSIdent(tsidentReq);
+    		// Reset the interval, will be OK based on parsing at the top of the method.
+    		tsidentOut.setInterval("24Hour");
+    		tsidOut = tsidentOut.toString();
+    		outIsDifferent = true;
+    	}
+    	else if ( read24HourAsDay ) {
+    		// A different interval than the requested TSID is being used.
+    		// Copy the requested identifier.
+    		tsidentOut = new TSIdent(tsidentReq);
+    		// Reset the interval, will be OK based on parsing at the top of the method.
+    		tsidentOut.setInterval("1Day");
+    		tsidOut = tsidentOut.toString();
+    		outIsDifferent = true;
+    	}
+    	try {
+    		if ( outIsDifferent ) {
+    			Message.printStatus(2, routine, "Output time series has different TSID (" + tsidOut
+    				+ " than requested TSID (" + tsidReq + ").");
+    		}
+    		ts = TSUtil.newTimeSeries(tsidentOut.toString(), true);
+    	}
+    	catch ( Exception e ) {
+    		throw new RuntimeException ( e );
     	}
     	
-    	// Create the time series and set properties.
-
+    	// Set the time series properties.
+    	//int intervalBaseOut = tsidentOut.getIntervalBase();
+    	//int intervalMultOut = tsidentOut.getIntervalMult();
     	try {
-    		ts = TSUtil.newTimeSeries(tsident.toString(), true);
+    		ts.setIdentifier(tsidOut);
     	}
     	catch ( Exception e ) {
     		throw new RuntimeException ( e );
     	}
-    	// Set the properties.
-    	tsident = null;
-    	String dataTypeReq = null;
-    	String dataIntervalReq = null;
-    	try {
-    		ts.setIdentifier(tsid);
-    		tsident = ts.getIdentifier();
-    		dataTypeReq = tsident.getType();
-    		dataIntervalReq = tsident.getInterval();
-    	}
-    	catch ( Exception e ) {
-    		throw new RuntimeException ( e );
-    	}
-    	// The period will be reset below if irregular because data don't exist exactly at boundaries
+    	// Set the period to bounding data records:
+    	// - the period may be reset below depending on time series interval, interval end adjustments, etc.
+    	// - TODO smalers 2023-01-17 may need to do more to handle the case of interval data timestamps being adjusted below
     	if ( readStart != null ) {
     		ts.setDate1Original(readStart);
     		/*
@@ -1189,36 +1319,221 @@ public class KiWISDataStore extends AbstractWebServiceDataStore implements DataS
 		ts.setDataUnitsOriginal(tscatalog.getTsUnitSymbol());
 		ts.setMissing(Double.NaN);
 
-		// Set the time series properties.
+		// Set the time series properties:
+		// - additional properties are set below to help understand adjusted timestamps and offset days
 		setTimeSeriesProperties ( ts, tscatalog );
     	
     	if ( readData ) {
     		// Also read the time series values.
-    		List<TimeSeriesValue> timeSeriesValueList = readTimeSeriesValues ( kiwisTsid, kiwisTsPath, readStart, readEnd, readProperties );
+    		StringBuilder valuesUrl = new StringBuilder();
+    		List<TimeSeriesValue> timeSeriesValueList = readTimeSeriesValues (
+    			kiwisTsid, kiwisTsPath, readStart, readEnd, readProperties,
+    			valuesUrl );
     		
     		String dataFlag = null;
-    		DateTime date = null;
+    		DateTime dateTime = null;
     		double value;
+    		int interpolationTypeNum = -1;
+    		InterpolationType interpolationType = null;
     		String valueString;
     		int duration = -1;
     		List<QualityCode> qualityCodeList = this.getQualityCodes(false);
+    		int badDateTimeCount = 0;
+    		int badValueCount = 0;
+    		int badInterpolationTypeCount = 0;
+    		int notInsertedCount = 0;
+    		// Count of how many values are adjusted from beginning to end of interval.
+    		int timeAdjustCount = 0;
+    		// Count of how many daily values have non-zero hour.
+    		int dayNonZeroHourCount = 0;
     		if ( timeSeriesValueList.size() > 0 ) {
-    			// Set the period based on data.
+    			// Set the period based on data from the first and last values:
+    			// - this values may be adjusted below
     			ts.setDate1(DateTime.parse(timeSeriesValueList.get(0).getTimestamp()));
     			ts.setDate2(DateTime.parse(timeSeriesValueList.get(timeSeriesValueList.size() - 1).getTimestamp()));
 
-    			// Allocate the time series data array.
+    			// Check the time series values up front to see if any date/times will be adjusted from
+    			// beginning to end of the interval.  TSTool uses interval-ending values.
+    			// Must do this up front in order to adjust the time series period for regular interval time series
+    			// so that all queried values will be saved in the time series.
+    			interpolationType = InterpolationType.UNKNOWN;
+    			for ( TimeSeriesValue tsValue : timeSeriesValueList ) {
+    				if ( tsValue.getInterpolationType().getTimestampPos() == -1 ) {
+    					// Save the interpolation type that triggered the adjustment.
+    					interpolationType = tsValue.getInterpolationType();
+    					++timeAdjustCount;
+    					// Can break since only need to know if one time is adjusted.
+    					break;
+    				}
+    			}
+
+    			// If any times will be adjusted from beginning to end of the interval, also adjust the periods:
+    			// - only need to adjust if regular interval time series (KiWIS has non-blank ts_spacing)
+    			// - the data value timestamps are shifted similarly before adding data to the time series
+    			if ( timeAdjustCount > 0 ) {
+    				if ( isRegularIntervalReq ) {
+    					// Regular interval time series.
+    					DateTime date1 = ts.getDate1();
+    					adjustTimeForInterpolationType(intervalBaseReq, intervalMultReq, date1, interpolationType);
+    					ts.setDate1(date1);
+    					DateTime date2 = ts.getDate2();
+    					adjustTimeForInterpolationType(intervalBaseReq, intervalMultReq, date2, interpolationType);
+    					ts.setDate2(date2);
+    					DateTime date1Original = ts.getDate1Original();
+    					if ( date1Original != null ) {
+    						adjustTimeForInterpolationType(intervalBaseReq, intervalMultReq, date1Original, interpolationType);
+    						ts.setDate1Original(date1Original);
+    					}
+    					DateTime date2Original = ts.getDate2Original();
+    					if ( date2Original != null ) {
+    						adjustTimeForInterpolationType(intervalBaseReq, intervalMultReq, date2Original, interpolationType);
+    						ts.setDate2Original(date2Original);
+    					}
+    				}
+    			}
+
+    			// The following if blocks match the logic inside the loop where values are transfered.
+
+    			if ( isRegularIntervalReq && (intervalBaseReq == TimeInterval.DAY) && (intervalMultReq == 1) ) {
+    				if ( readDayAs24Hour ) {
+    					// Since KiWIS timestamp already includes hour, don't need to do anything,
+    					// other than the output time series needs to have its interval changed above (above).
+    					// Parsed date/time will already include the correct hour so just need to set the precision.
+   						DateTime date1 = ts.getDate1();
+   						date1.setPrecision(DateTime.PRECISION_HOUR);
+    					ts.setDate1(date1);
+   						DateTime date2 = ts.getDate2();
+   						date2.setPrecision(DateTime.PRECISION_HOUR);
+    					ts.setDate2(date2);
+    					Message.printStatus(2,routine,"After adjusting period precision for ReadDayAs24Hour, date1="
+    						+ ts.getDate1() + " date2=" + ts.getDate2());
+    					// Original period is probably null but try to set.
+   						DateTime date1Original = ts.getDate1Original();
+   						if ( date1Original != null ) {
+   							date1Original.setPrecision(DateTime.PRECISION_HOUR);
+    						ts.setDate1Original(date1Original);
+   						}
+   						DateTime date2Original = ts.getDate2Original();
+   						if ( date2Original != null ) {
+   							date2Original.setPrecision(DateTime.PRECISION_HOUR);
+    						ts.setDate2Original(date2Original);
+   						}
+    				}
+    				else {
+    					// By default, 1Day time series are shifted.
+    					// - KiWIS timestamp is at midnight (hour zero of next day)
+    					// - adjust the KiWIS timestamp to previous day (time will be discarded).
+    					// - do not do the adjustment if irregular interval other than if IrregDay is requested
+    					// - TODO smalers 2023-01-18 will need to handle month and year when enabled
+    					if ( (irregularInterval == null) ||
+    						((irregularInterval != null) && (irregularInterval.getIrregularIntervalPrecision() == TimeInterval.DAY)) ) {
+    						DateTime date1 = ts.getDate1();
+   							date1.setPrecision(DateTime.PRECISION_DAY);
+    						date1.addDay(-1);
+    						date1.setHour(0); // Should not be used.
+    						ts.setDate1(date1);
+   							DateTime date2 = ts.getDate2();
+   							date2.setPrecision(DateTime.PRECISION_DAY);
+    						date2.addDay(-1);
+    						date2.setHour(0); // Should not be used.
+    						ts.setDate2(date2);
+    						Message.printStatus(2,routine,"After adjusting period precision for default day handling, date1="
+    							+ ts.getDate1() + " date2=" + ts.getDate2());
+    						// Original period is probably null but try to set.
+   							DateTime date1Original = ts.getDate1Original();
+   							if ( date1Original != null ) {
+   								date1Original.setPrecision(DateTime.PRECISION_DAY);
+   								date1Original.addDay(-1);
+    							date1Original.setHour(0); // Should not be used.
+    							ts.setDate1Original(date1Original);
+   							}
+   							DateTime date2Original = ts.getDate2Original();
+   							if ( date2Original != null ) {
+   								date2Original.setPrecision(DateTime.PRECISION_DAY);
+   								date2Original.addDay(-1);
+    							date2Original.setHour(0); // Should not be used.
+    							ts.setDate2Original(date2Original);
+   							}
+    					}
+    				}
+    			}
+    			else if ( isRegularIntervalReq && (intervalBaseReq == TimeInterval.HOUR) && (intervalMultReq == 24) && read24HourAsDay ) {
+    				// 24Hour in KiWIS but want 1Day output:
+    				// - adjust the KiWIS timestamp to previous day (time will be discarded).
+   					DateTime date1 = ts.getDate1();
+   					date1.setPrecision(DateTime.PRECISION_DAY);
+    				date1.addDay(-1);
+    				date1.setHour(0); // Should not be used.
+    				ts.setDate1(date1);
+   					DateTime date2 = ts.getDate2();
+   					date2.setPrecision(DateTime.PRECISION_DAY);
+    				date2.addDay(-1);
+    				date2.setHour(0); // Should not be used.
+    				ts.setDate2(date2);
+    				Message.printStatus(2,routine,"After adjusting period precision for Read24HourAsDay, date1="
+    					+ ts.getDate1() + " date2=" + ts.getDate2());
+    				// Original period is probably null but try to set.
+   					DateTime date1Original = ts.getDate1Original();
+   					date1Original.setPrecision(DateTime.PRECISION_DAY);
+   					if ( date1Original != null ) {
+   						date1Original.addDay(-1);
+    					date1Original.setHour(0); // Should not be used.
+    					ts.setDate1Original(date1Original);
+   					}
+   					DateTime date2Original = ts.getDate2Original();
+   					date2Original.setPrecision(DateTime.PRECISION_DAY);
+   					if ( date2Original != null ) {
+   						date2Original.addDay(-1);
+    					date2Original.setHour(0); // Should not be used.
+    					ts.setDate2Original(date2Original);
+   					}
+    			}
+
+    			if ( irregularInterval != null ) {
+    				// Adjust the precision on the period date/times:
+    				// - copies of the dates are returned so have to reset
+   					DateTime date1 = ts.getDate1();
+    				date1.setPrecision(irregularInterval.getIrregularIntervalPrecision());
+    				ts.setDate1(date1);
+   					DateTime date2 = ts.getDate2();
+    				date2.setPrecision(irregularInterval.getIrregularIntervalPrecision());
+    				ts.setDate2(date2);
+    				Message.printStatus(2,routine,"After adjusting period precision for irregular interval ("
+    					+ irregularInterval + "), date1=" + ts.getDate1() + " date2=" + ts.getDate2());
+    				// Original period is probably null but try to set.
+   					DateTime date1Original = ts.getDate1Original();
+   					if ( date1Original != null ) {
+   						date1Original.setPrecision(irregularInterval.getIrregularIntervalPrecision());
+   						ts.setDate1Original(date1Original);
+   					}
+   					DateTime date2Original = ts.getDate2Original();
+   					if ( date2Original != null ) {
+   						date2Original.setPrecision(irregularInterval.getIrregularIntervalPrecision());
+    					ts.setDate2Original(date2Original);
+   					}
+    			}
+    			
+    			// If reading day interval, convert midnight hour 0 of the next day to day precision of the previous day,
+    			// for example:
+    			//   2023-01-01 00:00:00 -> 2022-12-31
+    			// Time series that use timestamps with time intervals can remain as is.
+
+    			// Allocate the time series data array:
+    			// - do this after adjusting the period for timestamps
+    			// - irregular interval does not allocate an array up front
     			ts.allocateDataSpace();
     			
     			// Transfer the TimeSeriesValue list to the TS data.
     			
     			Message.printStatus(2,routine, "Transferring " + timeSeriesValueList.size() + " time series values.");
+    			timeAdjustCount = 0;
     			for ( TimeSeriesValue tsValue : timeSeriesValueList ) {
     				try {
-    					date = DateTime.parse(tsValue.getTimestamp());
+    					dateTime = DateTime.parse(tsValue.getTimestamp());
     				}
     				catch ( Exception e ) {
     					Message.printWarning(3, routine, "Error parsing date/time: " + tsValue.getTimestamp());
+    					++badDateTimeCount;
     					continue;
     				}
     				valueString = tsValue.getValue();
@@ -1228,12 +1543,113 @@ public class KiWISDataStore extends AbstractWebServiceDataStore implements DataS
     					}
     					catch ( NumberFormatException e ) {
     						Message.printWarning(3, routine, "Error parsing " + tsValue.getTimestamp() + " data value: " + tsValue.getValue());
+    						++badValueCount;
     						continue;
     					}
+    					// Get the interpolation type enumeration.
+    					interpolationType = tsValue.getInterpolationType();
+    					if ( interpolationType == InterpolationType.UNKNOWN ) {
+    						Message.printWarning(3, routine, "Unknown interpolation type " + interpolationTypeNum
+    							+ " at " + tsValue.getTimestamp() + " - skipping value." );
+    						++badInterpolationTypeCount;
+    						continue;
+    					}
+    					// Adjust the date/time based on the interpolation type:
+    					// - only need to do this for regular interval time series
+    					// - only values that have timestamp at the beginning of an interval are adjusted
+    					// - keep a count that is added as a time series property
+    					if ( isRegularIntervalReq ) {
+    						timeAdjustCount += adjustTimeForInterpolationType(intervalBaseReq, intervalMultReq, dateTime, interpolationType);
+    					}
+
+    					// Look up the data flag from the quality code integer.
     					dataFlag = lookupQualityCode(qualityCodeList, tsValue.getQualityCode());
-    					ts.setDataValue(date, value, dataFlag, duration);
+
+    					// Also check daily interval time series:
+    					// - if the hour is not zero, count and add as a property later
+    					// - time zone is ignored so -0700, -0600, etc. does not come into play
+    					// - if the count is non-zero, generate an exception because need to handle as 24Hour or irregular
+    					if ( isRegularIntervalReq && (intervalBaseReq == TimeInterval.DAY) && (intervalMultReq == 1) ) {
+    						if ( dateTime.getHour() != 0 ) {
+    							// Any day interval values with non-zero hour will result in an exception because TSTool does
+    							// not have a clean way to handle, for example, 7AM to 7AM time series.
+    							// The IrregularInterval=IrregDay parameter should be specified and uses have to deal with the data.
+    							++dayNonZeroHourCount;
+    						}
+    						if ( readDayAs24Hour ) {
+    							// Since KiWIS timestamp already includes hour, don't need to do anything,
+    							// other than the output time series needs to have its interval changed above (above).
+    							dateTime.setPrecision(DateTime.PRECISION_HOUR);
+    						}
+    						else {
+    							// By default, 1Day time series are shifted.
+    							// - KiWIS timestamp is at midnight (hour zero of next day)
+    							// - adjust the KiWIS timestamp to previous day (time will be discarded).
+    							// - do not do the adjustment if irregular interval other than if IrregDay is requested
+    							// - TODO smalers 2023-01-18 will need to handle month and year when enabled
+    							if ( (irregularInterval == null) ||
+    								((irregularInterval != null) && (irregularInterval.getIrregularIntervalPrecision() == TimeInterval.DAY)) ) {
+    								dateTime.addDay(-1);
+    								dateTime.setHour(0); // Should not be used.
+    								dateTime.setPrecision(DateTime.PRECISION_DAY);
+    							}
+    						}
+    					}
+    					else if ( isRegularIntervalReq && (intervalBaseReq == TimeInterval.HOUR) && (intervalMultReq == 24) && read24HourAsDay ) {
+    						// 24Hour in KiWIS but want 1Day output:
+    						// - adjustment will not occur if IrregularInterval was specified
+    						// - adjust the KiWIS timestamp to previous day (time will be discarded).
+    						dateTime.addDay(-1);
+    						dateTime.setHour(0); // Should not be used.
+   							dateTime.setPrecision(DateTime.PRECISION_DAY);
+    					}
+
+    					if ( irregularInterval != null ) {
+    						// Irregular interval output was requested:
+    						// - don't need to do adjustments below for day and 24Hour
+    						// - set the precision based on what was requested
+    						dateTime.setPrecision(irregularInterval.getIrregularIntervalPrecision());
+    					}
+    					
+    					// Set the data value in the time series:
+    					// - the date/time will be copied if necessary and the precision set to be consistent with the time series
+    					if ( Message.isDebugOn ) {
+    						Message.printStatus(2, routine, "  Setting " + dateTime + " value=" + value
+    							+ " flag=" + dataFlag + " for interpolationType=" + interpolationType );
+    					}
+    					if ( ts.setDataValue(dateTime, value, dataFlag, duration) == 0 ) {
+    						// Track points that are not inserted because may be an issue with the period due to
+    						// adjusted date/times not aligning with the allocated period.
+    						++notInsertedCount;
+    					}
     				}
     			}
+    			if ( badDateTimeCount > 0 ) {
+    				//problems.add("Time series had " + badDateTimeCount + " bad timestamps.  See the log file.");
+    				throw new Exception ("Time series had " + badDateTimeCount + " bad timestamps.  See the log file.");
+    			}
+    			if ( badValueCount > 0 ) {
+    				//problems.add("Time series had " + badValueCount + " bad data values.  See the log file.");
+    				throw new Exception("Time series had " + badValueCount + " bad data values.  See the log file.");
+    			}
+    			if ( badInterpolationTypeCount > 0 ) {
+    				//problems.add("Time series had " + badInterpolationTypeCount + " bad interpolation types.  See the log file.");
+    				throw new Exception ("Time series had " + badInterpolationTypeCount + " bad interpolation types.  See the log file.");
+    			}
+    		}
+    		
+    		// Set additional time series properties to help understand the data.
+    		ts.setProperty("ts.TimestampsAdjustedToIntervalEndCount", new Integer(timeAdjustCount));
+    		ts.setProperty("ts.DayNonZeroHourCount", new Integer(dayNonZeroHourCount));
+    		ts.setProperty("ts.NotInsertedCount", new Integer(notInsertedCount));
+    		ts.setProperty("ts.GetTimeSeriesValuesUrl", valuesUrl.toString());
+    		
+    		// In order to avoid confusion, throw exceptions for cases that may be misinterpreted.
+    		if ( (intervalBaseReq == TimeInterval.DAY) && (intervalMultReq == 1) && (dayNonZeroHourCount > 0)) {
+    			// Daily time series but 
+    			throw new Exception ("KiWIS day interval time series had " + dayNonZeroHourCount
+    				+ " values at non-zero hour.  Use ReadKiWIS(IrregularInterval=IrregHour) to "
+    				+ "represent daily time series that are offset from midnight.");
     		}
     	}
 
@@ -1369,11 +1785,26 @@ public class KiWISDataStore extends AbstractWebServiceDataStore implements DataS
 			Message.printStatus(2, routine, "  Read 0 items.");
 		}
 		
-		// Convert the KiWIS TimeSeries objects to TimeSeriesCatalog.
+		// Convert the KiWIS TimeSeries objects to TimeSeriesCatalog:
+		// - also filter on the data interval, which is not a web service parameter
+		boolean doCheckInterval = false;
+		if ( (dataIntervalReq != null) && !dataIntervalReq.isEmpty() && !dataIntervalReq.equals("*") ) {
+			doCheckInterval = true;
+		}
 		List<TimeSeriesCatalog> tscatalogList = new ArrayList<>();
 		String stationParameterNo;
 		String tsShortName;
+		String dataInterval;
 		for ( TimeSeries timeSeries : timeSeriesList ) {
+			dataInterval = convertSpacingToInterval(timeSeries.getTsSpacing());
+			if ( doCheckInterval ) {
+				if ( !dataIntervalReq.equals(dataInterval) ) {
+					continue;
+				}
+			}
+
+			// Matched the filters so continue adding.
+			
 			TimeSeriesCatalog tscatalog = new TimeSeriesCatalog();
 
 			// Standard properties expected by TSTool:
@@ -1387,7 +1818,7 @@ public class KiWISDataStore extends AbstractWebServiceDataStore implements DataS
 				tsShortName = "'" + tsShortName + "'";
 			}
 			tscatalog.setDataType(stationParameterNo + "-" + tsShortName);
-			tscatalog.setDataInterval(convertSpacingToInterval(timeSeries.getTsSpacing()));
+			tscatalog.setDataInterval(dataInterval);
 			tscatalog.setDataUnits(timeSeries.getTsUnitSymbol()); // Symbol = abbreviation?
 
 			// Standard and additional properties returned by the web service (see 'returnFields').
@@ -1433,18 +1864,19 @@ public class KiWISDataStore extends AbstractWebServiceDataStore implements DataS
 
     /**
      * Read time series values.
-     * @param kiwisTsid the Kisters 'ts_id' when the TSID uses location type.
-     * @param kiwisTsPath the Kisters 'ts_path' when the TSID uses parts similar to the 'ts_path'
+     * @param kiwisTsid the KiWIS 'ts_id' when the TSID uses location type.
+     * @param kiwisTsPath the KiWIS 'ts_path' when the TSID uses parts similar to the 'ts_path'
      * @param readStart start of read, will be set to 'periodStart' service parameter.
      * @param readEnd end of read, will be set to 'periodEnd' service parameter.
      * @param readProperties additional properties to control the query:
      * <ul>
      * <li> Not yet implemented.</li>
      * </ul>
+     * @param url StringBuilder to save the path
      * @return the list of time series values, may be an empty list
      */
     public List<TimeSeriesValue> readTimeSeriesValues ( Integer kiwisTsid, String kiwisTsPath, DateTime readStart, DateTime readEnd,
-    	HashMap<String,Object> readProperties ) throws Exception {
+    	HashMap<String,Object> readProperties, StringBuilder url ) throws Exception {
     	//throws IOException {
     	String routine = getClass().getSimpleName() + ".readTimeSeriesValues";
     	List<TimeSeriesValue> timeSeriesValues = new ArrayList<>();
@@ -1460,7 +1892,7 @@ public class KiWISDataStore extends AbstractWebServiceDataStore implements DataS
 			getServiceRootURI() + COMMON_REQUEST_PARAMETERS + "&request=getTimeseriesValues&format=" + format
 				+ "&ts_id=" + kiwisTsid
 				+ "&returnfields="
-				+ URLEncoder.encode("Timestamp,Value,Quality Code",StandardCharsets.UTF_8.toString()));
+				+ URLEncoder.encode("Timestamp,Value,Quality Code,Interpolation Type",StandardCharsets.UTF_8.toString()));
 		
 		// Add where for period to query using ISO format "YYYY-MM-DD hh:mm:ss":
 		// - no T between date and time?
@@ -1477,6 +1909,11 @@ public class KiWISDataStore extends AbstractWebServiceDataStore implements DataS
 		if ( (readStart == null) && (readEnd == null) ) {
 			// Request all data.
 			requestUrl.append("&period=complete");
+		}
+		
+		// Pass back the URL to the calling code so it can be added as a time series property.
+		if ( url != null ) {
+			url.append(requestUrl.toString());
 		}
 		
 		Message.printStatus(2, routine, "Reading time series values from: " + requestUrl);
@@ -1505,6 +1942,8 @@ public class KiWISDataStore extends AbstractWebServiceDataStore implements DataS
 			String delim = ";";
 			List<String> tokens = null;
 			TimeSeriesValue timeSeriesValue = null;
+			int valueCount = 0;
+			boolean fieldCountWarned = false;
 			while ( (line = reader.readLine()) != null ) {
 				if ( line.isEmpty() ) {
 					// Totally empty line.
@@ -1521,18 +1960,32 @@ public class KiWISDataStore extends AbstractWebServiceDataStore implements DataS
 
 				// Split the line by semicolons.
 				tokens = StringUtil.breakStringList(line, delim, 0);
-				// Make sure the requested fields.
-				if ( tokens.size() == 3 ) {
+				// Make sure the number of requested fields matches:
+				// - see the request URL for fields that should be included
+				if ( tokens.size() == 4 ) {
 					// Create a new value object.
 					timeSeriesValue = new TimeSeriesValue();
 					// Transfer the values from response to the value object.
 					timeSeriesValue.setTimestamp(tokens.get(0));
 					timeSeriesValue.setValue(tokens.get(1));
 					timeSeriesValue.setQualityCode(tokens.get(2));
+					if ( StringUtil.isInteger(tokens.get(3)) ) {
+						timeSeriesValue.setInterpolationType(Integer.parseInt(tokens.get(3)));
+					}
 					// Add the value object to the list to return.
 					timeSeriesValues.add(timeSeriesValue);
+					++valueCount;
+				}
+				else {
+					if ( !fieldCountWarned ) {
+						// Warn once to help with troubleshooting:
+						// - probably added a field the request but did not change token size check above
+						Message.printWarning(3, routine, "  Time series values list has the wrong number of fields.");
+						fieldCountWarned = true;
+					}
 				}
 			}
+			Message.printStatus(2, routine, "  Read " + valueCount + " time series values.");
 		}
 		else if ( format.equals("dajson") ) {
 			// format=dajson returns the following, which is somewhat difficult to handle so use csv.
@@ -1554,13 +2007,13 @@ public class KiWISDataStore extends AbstractWebServiceDataStore implements DataS
 				Message.printWarning(3,routine,e);
 			}
 			if ( (jsonNode != null) && (jsonNode.size() > 0) ) {
-				Message.printStatus(2, routine, "  Read " + jsonNode.size() + " items.");
+				Message.printStatus(2, routine, "  Read " + jsonNode.size() + " time series values.");
 				for ( int i = 0; i < jsonNode.size(); i++ ) {
 					timeSeriesValues.add((TimeSeriesValue)JacksonToolkit.getInstance().treeToValue(jsonNode.get(i), TimeSeriesValue.class));
 				}
 			}
 			else {
-				Message.printStatus(2, routine, "  Read 0 items.");
+				Message.printStatus(2, routine, "  Read 0 time series values.");
 			}
 		}
     	

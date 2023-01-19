@@ -3,7 +3,7 @@
 /* NoticeStart
 
 OWF TSTool KiWIS Plugin
-Copyright (C) 2023 Open Water Foundation
+Copyright (C) 2022-2023 Open Water Foundation
 
 OWF TSTool KiWIS Plugin is free software:  you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -56,6 +56,7 @@ import RTi.Util.Message.Message;
 import RTi.Util.Message.MessageUtil;
 import RTi.Util.String.StringUtil;
 import RTi.Util.Time.DateTime;
+import RTi.Util.Time.TimeInterval;
 
 /**
 This class initializes, checks, and runs the ReadKiWIS() command.
@@ -99,6 +100,7 @@ cross-reference to the original commands.
 */
 public void checkCommandParameters ( PropList parameters, String command_tag, int warning_level )
 throws InvalidCommandParameterException {
+	String routine = getClass().getSimpleName() + "checkCommandParameters";
 	String warning = "";
     String message;
 
@@ -112,13 +114,17 @@ throws InvalidCommandParameterException {
     String TsShortName = parameters.getValue ( "TsShortName" );
     String InputStart = parameters.getValue ( "InputStart" );
     String InputEnd = parameters.getValue ( "InputEnd" );
+    String IrregularInterval = parameters.getValue ( "IrregularInterval" );
+    String Read24HourAsDay = parameters.getValue ( "Read24HourAsDay" );
+    String ReadDayAs24Hour = parameters.getValue ( "ReadDayAs24Hour" );
+    String Debug = parameters.getValue ( "Debug" );
     String InputFiltersCheck = parameters.getValue ( "InputFiltersCheck" ); // Passed in from the editor, not an actual parameter.
     String Where1 = parameters.getValue ( "Where1" );
     String Where2 = parameters.getValue ( "Where2" );
     String Where3 = parameters.getValue ( "Where3" );
     String Where4 = parameters.getValue ( "Where4" );
     String Where5 = parameters.getValue ( "Where5" );
-    
+
 	if ( (DataStore == null) || DataStore.isEmpty() ) {
         message = "The datastore must be specified.";
 		warning += "\n" + message;
@@ -131,7 +137,7 @@ throws InvalidCommandParameterException {
 
 	if ( (InputStart != null) && !InputStart.equals("") &&
 		!InputStart.equalsIgnoreCase("InputStart") &&
-		!InputStart.equalsIgnoreCase("InputEnd") && (InputStart.indexOf("${") < 0)) {
+		!InputStart.equalsIgnoreCase("InputEnd") && (InputStart.indexOf("${") < 0)) { // }
 		try {
 			DateTime.parse(InputStart);
 		}
@@ -143,9 +149,10 @@ throws InvalidCommandParameterException {
                             message, "Specify a date/time or InputStart." ) );
 		}
 	}
+
 	if ( (InputEnd != null) && !InputEnd.equals("") &&
 		!InputEnd.equalsIgnoreCase("InputStart") &&
-		!InputEnd.equalsIgnoreCase("InputEnd") && (InputEnd.indexOf("${") < 0)) {
+		!InputEnd.equalsIgnoreCase("InputEnd") && (InputEnd.indexOf("${") < 0)) { // }
 		try {
 			DateTime.parse( InputEnd );
 		}
@@ -156,6 +163,62 @@ throws InvalidCommandParameterException {
                         new CommandLogRecord(CommandStatusType.FAILURE,
                                 message, "Specify a date/time or InputEnd." ) );
 		}
+	}
+
+	// Can only have one of IrregularInterval, Read24HourAsDay, or ReadDayAs24Hour.
+	int paramCount = 0;
+	if ( (IrregularInterval != null) && !IrregularInterval.equals("") ) {
+		++paramCount;
+		if ( IrregularInterval.indexOf("${") < 0 ) {
+			try {
+				TimeInterval.parseInterval(IrregularInterval);
+			}
+			catch ( Exception e ) {
+				message = "Invalid irregular interval (" + IrregularInterval + ").";
+				warning += "\n" + message;
+				status.addToLog ( CommandPhaseType.INITIALIZATION,
+					new CommandLogRecord(CommandStatusType.FAILURE,
+						message, "Select an irregular interval from the choices.") );
+			}
+		}
+	}
+
+	if ( (Read24HourAsDay != null) && !Read24HourAsDay.equals("") ) {
+		++paramCount;
+		if ( !Read24HourAsDay.equalsIgnoreCase(_False) && !Read24HourAsDay.equalsIgnoreCase(_True) ) {
+			message = "The Read24HourAsDay parameter value is invalid.";
+			warning += "\n" + message;
+			status.addToLog ( CommandPhaseType.INITIALIZATION,
+                new CommandLogRecord(CommandStatusType.FAILURE,
+                    message, "Specify " + _False + " (default) or " + _True ) );
+		}
+	}
+
+	if ( (ReadDayAs24Hour != null) && !ReadDayAs24Hour.equals("") ) {
+		++paramCount;
+		if ( ReadDayAs24Hour.equalsIgnoreCase(_False) && !ReadDayAs24Hour.equalsIgnoreCase(_True) ) {
+			message = "The ReadDayAs24Hour parameter value is invalid.";
+			warning += "\n" + message;
+			status.addToLog ( CommandPhaseType.INITIALIZATION,
+                new CommandLogRecord(CommandStatusType.FAILURE,
+                    message, "Specify " + _False + " (default) or " + _True ) );
+		}
+	}
+	if ( paramCount > 1 ) {
+        message = "Can only specify one of IrregularInterval, Read24HourAsDay, and ReadDayAs24Hour parameters.";
+		warning += "\n" + message;
+           status.addToLog ( CommandPhaseType.INITIALIZATION,
+               new CommandLogRecord(CommandStatusType.FAILURE,
+                   message, "Specify one of IrregularInterval, Read24HourAsDay=True, or ReadDayAs24Hour=True."));
+	}
+
+	if ( (Debug != null) && !Debug.equals("") &&
+		!Debug.equalsIgnoreCase(_False) && !Debug.equalsIgnoreCase(_True) ) {
+        message = "The Debug parameter value is invalid.";
+		warning += "\n" + message;
+           status.addToLog ( CommandPhaseType.INITIALIZATION,
+               new CommandLogRecord(CommandStatusType.FAILURE,
+                   message, "Specify " + _False + " (default) or " + _True ) );
 	}
 
 	// Make sure that some parameters are specified so that a query of all data is disallowed.
@@ -205,8 +268,10 @@ throws InvalidCommandParameterException {
 		// Querying multiple time series.
 		readMult = true;
 	}
-	Message.printStatus(2, "", "LocId=" + LocId + " whereCount=" + whereCount + " readOne=" + readOne + " readMult=" + readMult);
-	Message.printStatus(2, "", "Where1=" + Where1 + " Where2=" + Where2 + " Where3=" + Where3 + " Where4=" + Where4 + " Where5=" + Where5);
+	if ( Message.isDebugOn ) {
+		Message.printStatus(2, routine, "LocId=" + LocId + " whereCount=" + whereCount + " readOne=" + readOne + " readMult=" + readMult);
+		Message.printStatus(2, routine, "Where1=" + Where1 + " Where2=" + Where2 + " Where3=" + Where3 + " Where4=" + Where4 + " Where5=" + Where5);
+	}
 	
 	if ( readOne && readMult ) {
 		// Can only read one or multiple.
@@ -232,7 +297,7 @@ throws InvalidCommandParameterException {
     if ( (InputFiltersCheck != null) && !InputFiltersCheck.isEmpty() ) {
     	warning += InputFiltersCheck;
     }
-    
+
     // Check for invalid parameters.
     List<String> validList = new ArrayList<>();
     validList.add ( "DataStore" );
@@ -243,12 +308,15 @@ throws InvalidCommandParameterException {
     validList.add ( "Statistic" );
     validList.add ( "Interval" );
     int numFilters = 25; // Make a big number so all are allowed.
-    for ( int i = 1; i <= numFilters; i++ ) { 
+    for ( int i = 1; i <= numFilters; i++ ) {
         validList.add ( "Where" + i );
     }
     validList.add ( "Alias" );
     validList.add ( "InputStart" );
     validList.add ( "InputEnd" );
+    validList.add ( "IrregularInterval" );
+    validList.add ( "Read24HourAsDay" );
+    validList.add ( "ReadDayAs24Hour" );
     validList.add ( "Timezone" );
     validList.add ( "Debug" );
     warning = TSCommandProcessorUtil.validateParameterNames ( validList, this, warning );
@@ -259,7 +327,7 @@ throws InvalidCommandParameterException {
 		warning );
 		throw new InvalidCommandParameterException ( warning );
 	}
-    
+
     status.refreshPhaseSeverity(CommandPhaseType.INITIALIZATION,CommandStatusType.SUCCESS);
 }
 
@@ -267,8 +335,12 @@ throws InvalidCommandParameterException {
  * Create properties for reading time series.
  * @param timezone time zone to be used for response, important for interval calculations
  * @param debug whether to run web service queries in debug
+ * @param irregularInterval irregular interval to use for output time series
+ * @param read24HourAsDay whether to read 24Hour time series as day interval
+ * @param readDayAs24Hour whether to read daily time series as 24Hour interval
  */
-private HashMap<String,Object> createReadProperties ( String timezone, boolean debug ) {
+private HashMap<String,Object> createReadProperties ( String timezone, boolean debug,
+	String irregularInterval, boolean read24HourAsDay, boolean readDayAs24Hour ) {
 	HashMap<String,Object> readProperties = new HashMap<>();
 	if ( (timezone != null) && !timezone.isEmpty() ) {
 		readProperties.put("TimeZone", timezone );
@@ -276,17 +348,25 @@ private HashMap<String,Object> createReadProperties ( String timezone, boolean d
 	if ( debug ) {
 		readProperties.put("Debug", new Boolean(true) );
 	}
+	if ( (irregularInterval != null) && !irregularInterval.isEmpty() ) {
+		readProperties.put("IrregularInterval", irregularInterval );
+	}
+	if ( read24HourAsDay ) {
+		readProperties.put("Read24HourAsDay", "True" );
+	}
+	if ( readDayAs24Hour ) {
+		readProperties.put("ReadDayAs24Hour", "True" );
+	}
 	return readProperties;
 }
 
 /**
 Edit the command.
 @param parent The parent JFrame to which the command dialog will belong.
-@return true if the command was edited (e.g., "OK" was pressed), and false if
-not (e.g., "Cancel" was pressed.
+@return true if the command was edited (e.g., "OK" was pressed), and false if not (e.g., "Cancel" was pressed.
 */
-public boolean editCommand ( JFrame parent )
-{	// The command will be modified if changed.
+public boolean editCommand ( JFrame parent ) {
+	// The command will be modified if changed.
 	return (new ReadKiWIS_JDialog ( parent, this )).ok();
 }
 
@@ -327,7 +407,7 @@ Run the command.
 @exception CommandException Thrown if fatal warnings occur (the command could not produce output).
 */
 public void runCommand ( int command_number )
-throws InvalidCommandParameterException, CommandWarningException, CommandException {   
+throws InvalidCommandParameterException, CommandWarningException, CommandException {
     runCommandInternal ( command_number, CommandPhaseType.RUN );
 }
 
@@ -360,7 +440,7 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
 	TSCommandProcessor tsprocessor = (TSCommandProcessor)processor;
     CommandStatus status = getCommandStatus();
     status.clearLog(commandPhase);
-    
+
     Boolean clearStatus = new Boolean(true); // Default.
     try {
     	Object o = processor.getPropContents("CommandsShouldClearRunStatus");
@@ -374,13 +454,13 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
     if ( clearStatus ) {
 		status.clearLog(commandPhase);
 	}
-    
+
     boolean readData = true;
     if ( commandPhase == CommandPhaseType.DISCOVERY ) {
         setDiscoveryTSList ( null );
         readData = false;
     }
-    
+
 	String DataType = parameters.getValue("DataType");
 	if ( commandPhase == CommandPhaseType.RUN ) {
 	    DataType = TSCommandProcessorUtil.expandParameterValue(getCommandProcessor(), this, DataType);
@@ -390,11 +470,11 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
 	    Interval = TSCommandProcessorUtil.expandParameterValue(getCommandProcessor(), this, Interval);
 	}
 	String LocId = parameters.getValue("LocId");
-	if ( commandPhase == CommandPhaseType.RUN ) { 
+	if ( commandPhase == CommandPhaseType.RUN ) {
 	    LocId = TSCommandProcessorUtil.expandParameterValue(getCommandProcessor(), this, LocId);
 	}
 	String TsShortName = parameters.getValue("TsShortName");
-	if ( commandPhase == CommandPhaseType.RUN ) { 
+	if ( commandPhase == CommandPhaseType.RUN ) {
 	    TsShortName = TSCommandProcessorUtil.expandParameterValue(getCommandProcessor(), this, TsShortName);
 	}
 	String InputStart = parameters.getValue("InputStart");
@@ -405,6 +485,18 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
 	if ( (InputEnd == null) || InputEnd.isEmpty() ) {
 		InputEnd = "${InputEnd}";
 	}
+    String IrregularInterval = parameters.getValue("IrregularInterval");
+	IrregularInterval = TSCommandProcessorUtil.expandParameterValue(getCommandProcessor(), this, IrregularInterval);
+    String Read24HourAsDay = parameters.getValue("Read24HourAsDay");
+    boolean read24HourAsDay = false;
+    if ( (Read24HourAsDay != null) && Read24HourAsDay.equalsIgnoreCase(_True) ) {
+    	read24HourAsDay = true;
+    }
+    String ReadDayAs24Hour = parameters.getValue("ReadDayAs24Hour");
+    boolean readDayAs24Hour = false;
+    if ( (ReadDayAs24Hour != null) && ReadDayAs24Hour.equalsIgnoreCase(_True) ) {
+    	readDayAs24Hour = true;
+    }
 	String Timezone = parameters.getValue ("Timezone" );
 	String Debug = parameters.getValue ("Debug" );
 	boolean debug = false; // Default
@@ -435,7 +527,7 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
 
 	if ( warning_count > 0 ) {
 		message = "There were " + warning_count + " warnings about command parameters.";
-		Message.printWarning ( warning_level, 
+		Message.printWarning ( warning_level,
 		MessageUtil.formatMessageTag(command_tag, ++warning_count),
 		routine, message );
 		throw new InvalidCommandParameterException ( message );
@@ -448,7 +540,7 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
 
 	// Now try to read.
 
-	List<TS> tslist = new ArrayList<TS>();	// List for time series results.
+	List<TS> tslist = new ArrayList<>();	// List for time series results.
 					// Will be added to for one time series read or replaced if a list is read.
 	try {
         String Alias = parameters.getValue ( "Alias" );
@@ -506,11 +598,22 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
 					tsident.setInterval(Interval);
 				}
 				String TSID = tsident.getIdentifier();
+				// Currently can only read up to 1Day interval:
+				// - TODO smalers 2023-01-16 enable once know how to handle
+				if ( (tsident.getIntervalBase() == TimeInterval.MONTH) || (tsident.getIntervalBase() == TimeInterval.YEAR) ) {
+					message = "Don't know how to read month or year interval for \"" + TSID + "\".";
+					Message.printWarning ( 2, routine, message );
+	                status.addToLog ( commandPhase,
+	                    new CommandLogRecord(CommandStatusType.FAILURE,
+	                        message, "Software needs to be enhanced." ) );
+				}
+				else {
 				// Version that reads a single time series using the TSID.
-				Message.printStatus ( 2, routine, "Reading KiWIS web service time series \"" + TSID + "\"" );
+				Message.printStatus ( 2, routine, "Reading a single KiWIS web service time series \"" + TSID + "\"" );
 				TS ts = null;
 				try {
-					HashMap<String,Object> readProperties = createReadProperties ( Timezone, debug );
+					HashMap<String,Object> readProperties = createReadProperties ( Timezone, debug, IrregularInterval,
+						read24HourAsDay, readDayAs24Hour );
 	                ts = dataStore.readTimeSeries ( TSID, InputStart_DateTime, InputEnd_DateTime, readData, readProperties );
 				}
 				catch ( Exception e ) {
@@ -526,8 +629,7 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
 				finally {
 				    if ( ts == null ) {
 				        // Generate an event for listeners.
-				        notifyCommandProcessorEventListeners(
-					        new MissingObjectEvent(TSID,Class.forName("RTi.TS.TS"),"Time Series", this));
+				        notifyCommandProcessorEventListeners(new MissingObjectEvent(TSID,Class.forName("RTi.TS.TS"),"Time Series", this));
 				    }
 				}
 				if ( ts != null ) {
@@ -538,11 +640,12 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
 				    }
 					tslist.add ( ts );
 				}
+				}
 	        }
 			else {
 	            // Read 1+ time series using the input filters.
 				// Get the input needed to process the file.
-				Message.printStatus(2, routine, "Reading multiple time series using input filter.");
+				Message.printStatus(2, routine, "Reading multiple KiWIS time series using input filter.");
 				String InputName = parameters.getValue ( "InputName" );
 				if ( InputName == null ) {
 					InputName = "";
@@ -624,7 +727,7 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
 					Message.printStatus ( 2, routine,"No KiWIS web service time series were found." );
 			        // Warn if nothing was retrieved (can be overridden to ignore).
 		            message = "No time series were read from the KiWIS web service.";
-		            Message.printWarning ( warning_level, 
+		            Message.printWarning ( warning_level,
 		                MessageUtil.formatMessageTag(command_tag,++warning_count), routine, message );
 	                status.addToLog ( commandPhase,
 	                    new CommandLogRecord(CommandStatusType.FAILURE,
@@ -645,7 +748,8 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
 				String tsidentString = null; // TSIdent string.
 				TS ts; // Time series to read.
 				TimeSeriesCatalog tsCatalog;
-				HashMap<String,Object> readProperties = createReadProperties ( Timezone, debug );
+				HashMap<String,Object> readProperties = createReadProperties ( Timezone, debug, IrregularInterval,
+					read24HourAsDay, readDayAs24Hour );
 				for ( int i = 0; i < size; i++ ) {
 					// Check to see if reading time series should be canceled because the command has been canceled.
 					if ( tsprocessor.getCancelProcessingRequested() ) {
@@ -720,7 +824,7 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
 				}
 			}
 		}
-    
+
         int size = 0;
         if ( tslist != null ) {
             size = tslist.size();
@@ -735,7 +839,7 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
                 int wc = TSCommandProcessorUtil.processTimeSeriesListAfterRead( processor, this, tslist );
                 if ( wc > 0 ) {
                     message = "Error post-processing KiWIS web service time series after read.";
-                    Message.printWarning ( warning_level, 
+                    Message.printWarning ( warning_level,
                         MessageUtil.formatMessageTag(command_tag,
                         ++warning_count), routine, message );
                         status.addToLog ( commandPhase,
@@ -743,13 +847,13 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
                                 message, "Report the problem to software support." ) );
                     throw new CommandException ( message );
                 }
-    
+
                 // Now add the list in the processor.
-                
+
                 int wc2 = TSCommandProcessorUtil.appendTimeSeriesListToResultsList ( processor, this, tslist );
                 if ( wc2 > 0 ) {
                     message = "Error adding KiWIS web service time series after read.";
-                    Message.printWarning ( warning_level, 
+                    Message.printWarning ( warning_level,
                         MessageUtil.formatMessageTag(command_tag,
                         ++warning_count), routine, message );
                         status.addToLog ( commandPhase,
@@ -765,7 +869,7 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
         // Warn if nothing was retrieved (can be overridden to ignore).
         if ( (tslist == null) || (size == 0) ) {
             message = "No time series were read from the KiWIS web service.";
-            Message.printWarning ( warning_level, 
+            Message.printWarning ( warning_level,
                 MessageUtil.formatMessageTag(command_tag,++warning_count), routine, message );
                 status.addToLog ( commandPhase,
                     new CommandLogRecord(CommandStatusType.FAILURE,
@@ -778,7 +882,7 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
 	catch ( Exception e ) {
 		Message.printWarning ( 3, routine, e );
 		message ="Unexpected error reading time series from the KiWIS web service (" + e + ").";
-		Message.printWarning ( warning_level, 
+		Message.printWarning ( warning_level,
 		MessageUtil.formatMessageTag(command_tag, ++warning_count),
 		routine, message );
         status.addToLog ( commandPhase,
@@ -796,7 +900,7 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
 			routine, message );
 		throw new CommandWarningException ( message );
 	}
-    
+
     status.refreshPhaseSeverity(commandPhase,CommandStatusType.SUCCESS);
 }
 
@@ -893,6 +997,27 @@ public String toString ( PropList props ) {
 			b.append ( "," );
 		}
 		b.append ( "InputEnd=\"" + InputEnd + "\"" );
+	}
+	String IrregularInterval = props.getValue("IrregularInterval");
+	if ( (IrregularInterval != null) && (IrregularInterval.length() > 0) ) {
+		if ( b.length() > 0 ) {
+			b.append ( "," );
+		}
+		b.append ( "IrregularInterval=\"" + IrregularInterval + "\"" );
+	}
+	String Read24HourAsDay = props.getValue("Read24HourAsDay");
+	if ( (Read24HourAsDay != null) && (Read24HourAsDay.length() > 0) ) {
+		if ( b.length() > 0 ) {
+			b.append ( "," );
+		}
+		b.append ( "Read24HourAsDay=" + Read24HourAsDay );
+	}
+	String ReadDayAs24Hour = props.getValue("ReadDayAs24Hour");
+	if ( (ReadDayAs24Hour != null) && (ReadDayAs24Hour.length() > 0) ) {
+		if ( b.length() > 0 ) {
+			b.append ( "," );
+		}
+		b.append ( "ReadDayAs24Hour=" + ReadDayAs24Hour );
 	}
     String Timezone = props.getValue("Timezone");
     if ( (Timezone != null) && (Timezone.length() > 0) ) {

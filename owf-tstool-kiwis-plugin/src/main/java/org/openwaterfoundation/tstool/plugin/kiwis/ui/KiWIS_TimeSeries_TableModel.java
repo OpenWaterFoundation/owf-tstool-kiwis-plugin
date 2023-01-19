@@ -3,7 +3,7 @@
 /* NoticeStart
 
 OWF TSTool KiWIS Plugin
-Copyright (C) 2022 Open Water Foundation
+Copyright (C) 2022-2023 Open Water Foundation
 
 OWF TSTool KiWIS Plugin is free software:  you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -195,7 +195,7 @@ public class KiWIS_TimeSeries_TableModel extends JWorksheet_AbstractRowTableMode
 	    toolTips[COL_STATION_NO] = "Station number - unique station number within KiWIS (station_no)";
 	    toolTips[COL_STATION_NAME] = "Station name (station_name)";
 	    toolTips[COL_DATA_TYPE] = "Time series data type (stationparameter_no-ts_shortname)";
-	    toolTips[COL_DATA_INTERVAL] = "Time series data interval (ts_spacing)";
+	    toolTips[COL_DATA_INTERVAL] = "Time series data interval (ts_spacing converted to TSTool interval)";
 	    //toolTips[COL_STATISTIC] = "NOT USED - statistic for regular interval data (included in main data type)";
 	    toolTips[COL_DATA_UNITS] = "Time series data value units abbreviation (ts_unit_symbol)";
 	    toolTips[COL_SITE_ID] = "Site identifier - unique site identifier within KiWIS (site_id)";
