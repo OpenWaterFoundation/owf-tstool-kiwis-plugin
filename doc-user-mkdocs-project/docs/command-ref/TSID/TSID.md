@@ -58,7 +58,9 @@ See the [automated tests](https://github.com/OpenWaterFoundation/owf-tstool-kiwi
 
 ## Troubleshooting ##
 
+*   See the [`ReadKiWIS` command troubleshooting](../ReadKiWIS/ReadKiWIS.md#troubleshooting) documentation.
+
 ## See Also ##
 
-* [`ReadKiWIS`](../ReadKiWIS/ReadKiWIS.md) command for full control reading KiWIS time series
-* [`ReadTimeSeries`](https://opencdss.state.co.us/tstool/latest/doc-user/command-ref/ReadTimeSeries/ReadTimeSeries/) command - provides more flexibility than a TSID
+*   [`ReadKiWIS`](../ReadKiWIS/ReadKiWIS.md) command for full control reading KiWIS time series
+*   [`ReadTimeSeries`](https://opencdss.state.co.us/tstool/latest/doc-user/command-ref/ReadTimeSeries/ReadTimeSeries/) command - provides more flexibility than a TSID

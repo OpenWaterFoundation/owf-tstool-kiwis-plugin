@@ -9,8 +9,8 @@ This plugin allows KiWIS time series to be listed and read.
 
 This documentation has been updated for:
 
-*   TSTool version 14.5.2
-*   TSTool KiWIS plugin version 1.0.0
+*   TSTool version 14.5.3
+*   TSTool KiWIS plugin version 1.1.0
 
 ----------------
 

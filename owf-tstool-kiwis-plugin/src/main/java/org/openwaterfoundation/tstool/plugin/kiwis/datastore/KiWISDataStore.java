@@ -553,7 +553,8 @@ public class KiWISDataStore extends AbstractWebServiceDataStore implements DataS
 					continue;
 				}
 			}
-			// Only add the interval if not already in the list.
+			// Only add the interval if not already in the list:
+			// - TODO smalers 2023-01-19 for now use a local method because don't want to require new TSTool version
 			if ( !StringUtil.isInList(dataIntervals, tscatalog.getDataInterval())) {
 				dataIntervals.add(tscatalog.getDataInterval());
 			}
@@ -611,11 +612,9 @@ public class KiWISDataStore extends AbstractWebServiceDataStore implements DataS
 
 		// Create the data type list.
 		boolean found = false;
-		String stationParameterName = null;
 		String stationParameterNo = null;
 		if ( parameterList != null ) {
 			for ( Parameter p : parameterList ) {
-				stationParameterName = p.getStationParameterName();
 				stationParameterNo = p.getStationParameterNo();
 				found = false;
 				for ( String dataType : dataTypes ) {
@@ -656,7 +655,7 @@ public class KiWISDataStore extends AbstractWebServiceDataStore implements DataS
  	*/
 	public TSIdent getTimeSeriesIdentifierFromTableModel( @SuppressWarnings("rawtypes") JWorksheet_AbstractRowTableModel tableModel,
 		int row ) {
-		String routine = getClass().getSimpleName() + ".getTimeSeriesIdentifierFromTableModel";
+		//String routine = getClass().getSimpleName() + ".getTimeSeriesIdentifierFromTableModel";
     	KiWIS_TimeSeries_TableModel tm = (KiWIS_TimeSeries_TableModel)tableModel;
     	// Should not have any nulls.
     	//String locId = (String)tableModel.getValueAt(row,tm.COL_LOCATION_ID);
@@ -696,9 +695,8 @@ public class KiWISDataStore extends AbstractWebServiceDataStore implements DataS
 
     /**
      * Get the TableModel used for displaying the time series.
-     *
      */
-    @SuppressWarnings("rawtypes")
+    @SuppressWarnings({ "rawtypes", "unchecked" })
 	public JWorksheet_AbstractRowTableModel getTimeSeriesListTableModel(List<? extends Object> data) {
     	return new KiWIS_TimeSeries_TableModel(this,(List<TimeSeriesCatalog>)data);
     }
@@ -721,7 +719,6 @@ public class KiWISDataStore extends AbstractWebServiceDataStore implements DataS
 		}
 		// Else use the dataType as is.
 		Message.printStatus(2, routine, "Getting statistic strings for data type \"" + dataType + "\" and interval \"" + dataInterval + "\"");
-		List<TimeSeriesCatalog> tscatalogList = new ArrayList<>();
 
 		// Get the distinct statistic strings.
 
@@ -1346,6 +1343,7 @@ public class KiWISDataStore extends AbstractWebServiceDataStore implements DataS
     		int timeAdjustCount = 0;
     		// Count of how many daily values have non-zero hour.
     		int dayNonZeroHourCount = 0;
+   			int valueErrorCount = 0;
     		if ( timeSeriesValueList.size() > 0 ) {
     			// Set the period based on data from the first and last values:
     			// - this values may be adjusted below
@@ -1528,113 +1526,142 @@ public class KiWISDataStore extends AbstractWebServiceDataStore implements DataS
     			Message.printStatus(2,routine, "Transferring " + timeSeriesValueList.size() + " time series values.");
     			timeAdjustCount = 0;
     			for ( TimeSeriesValue tsValue : timeSeriesValueList ) {
+    				if ( Message.isDebugOn ) {
+    					Message.printStatus(2,routine, "  Processing timestamp=" + tsValue.getTimestamp()
+    						+ " value=" + tsValue.getValue() + " quality code=" + tsValue.getQualityCode()
+    						+ " interpolation type number=" + tsValue.getInterpolationTypeNum()
+    						+ " interpolation type=" + tsValue.getInterpolationType() );
+    				}
     				try {
-    					dateTime = DateTime.parse(tsValue.getTimestamp());
-    				}
-    				catch ( Exception e ) {
-    					Message.printWarning(3, routine, "Error parsing date/time: " + tsValue.getTimestamp());
-    					++badDateTimeCount;
-    					continue;
-    				}
-    				valueString = tsValue.getValue();
-    				if ( (valueString != null) && !valueString.isEmpty() ) {
     					try {
-    						value = Double.parseDouble(tsValue.getValue());
+    						dateTime = DateTime.parse(tsValue.getTimestamp());
     					}
-    					catch ( NumberFormatException e ) {
-    						Message.printWarning(3, routine, "Error parsing " + tsValue.getTimestamp() + " data value: " + tsValue.getValue());
-    						++badValueCount;
+    					catch ( Exception e ) {
+    						Message.printWarning(3, routine, "  Error parsing date/time: " + tsValue.getTimestamp());
+    						++badDateTimeCount;
     						continue;
     					}
-    					// Get the interpolation type enumeration.
-    					interpolationType = tsValue.getInterpolationType();
-    					if ( interpolationType == InterpolationType.UNKNOWN ) {
-    						Message.printWarning(3, routine, "Unknown interpolation type " + interpolationTypeNum
-    							+ " at " + tsValue.getTimestamp() + " - skipping value." );
-    						++badInterpolationTypeCount;
-    						continue;
-    					}
-    					// Adjust the date/time based on the interpolation type:
-    					// - only need to do this for regular interval time series
-    					// - only values that have timestamp at the beginning of an interval are adjusted
-    					// - keep a count that is added as a time series property
-    					if ( isRegularIntervalReq ) {
-    						timeAdjustCount += adjustTimeForInterpolationType(intervalBaseReq, intervalMultReq, dateTime, interpolationType);
-    					}
-
-    					// Look up the data flag from the quality code integer.
-    					dataFlag = lookupQualityCode(qualityCodeList, tsValue.getQualityCode());
-
-    					// Also check daily interval time series:
-    					// - if the hour is not zero, count and add as a property later
-    					// - time zone is ignored so -0700, -0600, etc. does not come into play
-    					// - if the count is non-zero, generate an exception because need to handle as 24Hour or irregular
-    					if ( isRegularIntervalReq && (intervalBaseReq == TimeInterval.DAY) && (intervalMultReq == 1) ) {
-    						if ( dateTime.getHour() != 0 ) {
-    							// Any day interval values with non-zero hour will result in an exception because TSTool does
-    							// not have a clean way to handle, for example, 7AM to 7AM time series.
-    							// The IrregularInterval=IrregDay parameter should be specified and uses have to deal with the data.
-    							++dayNonZeroHourCount;
+    					valueString = tsValue.getValue();
+    					if ( (valueString != null) && !valueString.isEmpty() ) {
+    						try {
+    							value = Double.parseDouble(tsValue.getValue());
     						}
-    						if ( readDayAs24Hour ) {
-    							// Since KiWIS timestamp already includes hour, don't need to do anything,
-    							// other than the output time series needs to have its interval changed above (above).
-    							dateTime.setPrecision(DateTime.PRECISION_HOUR);
+    						catch ( NumberFormatException e ) {
+    							Message.printWarning(3, routine, "  Error parsing " + tsValue.getTimestamp() + " data value: " + tsValue.getValue());
+    							++badValueCount;
+    							continue;
     						}
-    						else {
-    							// By default, 1Day time series are shifted.
-    							// - KiWIS timestamp is at midnight (hour zero of next day)
-    							// - adjust the KiWIS timestamp to previous day (time will be discarded).
-    							// - do not do the adjustment if irregular interval other than if IrregDay is requested
-    							// - TODO smalers 2023-01-18 will need to handle month and year when enabled
-    							if ( (irregularInterval == null) ||
-    								((irregularInterval != null) && (irregularInterval.getIrregularIntervalPrecision() == TimeInterval.DAY)) ) {
-    								dateTime.addDay(-1);
-    								dateTime.setHour(0); // Should not be used.
-    								dateTime.setPrecision(DateTime.PRECISION_DAY);
+    						// Get the interpolation type enumeration.
+    						interpolationType = tsValue.getInterpolationType();
+    						if ( interpolationType == InterpolationType.UNKNOWN ) {
+    							Message.printWarning(3, routine, "  Unknown interpolation type " + interpolationTypeNum
+    								+ " at " + tsValue.getTimestamp() + " - skipping value." );
+    							++badInterpolationTypeCount;
+    							continue;
+    						}
+    						// Adjust the date/time based on the interpolation type:
+    						// - only need to do this for regular interval time series
+    						// - only values that have timestamp at the beginning of an interval are adjusted
+    						// - keep a count that is added as a time series property
+    						if ( isRegularIntervalReq ) {
+    							timeAdjustCount += adjustTimeForInterpolationType(intervalBaseReq, intervalMultReq, dateTime, interpolationType);
+    						}
+	
+    						// Look up the data flag from the quality code integer.
+    						dataFlag = lookupQualityCode(qualityCodeList, tsValue.getQualityCode());
+	
+    						// Also check daily interval time series:
+    						// - if the hour is not zero, count and add as a property later
+    						// - time zone is ignored so -0700, -0600, etc. does not come into play
+    						// - if the count is non-zero, generate an exception because need to handle as 24Hour or irregular
+    						if ( isRegularIntervalReq && (intervalBaseReq == TimeInterval.DAY) && (intervalMultReq == 1) ) {
+    							if ( dateTime.getHour() != 0 ) {
+    								// Any day interval values with non-zero hour will result in an exception because TSTool does
+    								// not have a clean way to handle, for example, 7AM to 7AM time series.
+    								// The IrregularInterval=IrregDay parameter should be specified and uses have to deal with the data.
+    								++dayNonZeroHourCount;
+    							}
+    							if ( readDayAs24Hour ) {
+    								// Since KiWIS timestamp already includes hour, don't need to do anything,
+    								// other than the output time series needs to have its interval changed above (above).
+    								dateTime.setPrecision(DateTime.PRECISION_HOUR);
+    							}
+    							else {
+    								// By default, 1Day time series are shifted.
+    								// - KiWIS timestamp is at midnight (hour zero of next day)
+    								// - adjust the KiWIS timestamp to previous day (time will be discarded).
+    								// - do not do the adjustment if irregular interval other than if IrregDay is requested
+    								// - TODO smalers 2023-01-18 will need to handle month and year when enabled
+    								if ( (irregularInterval == null) ||
+    									((irregularInterval != null) && (irregularInterval.getIrregularIntervalPrecision() == TimeInterval.DAY)) ) {
+    									dateTime.addDay(-1);
+    									dateTime.setHour(0); // Should not be used.
+    									dateTime.setPrecision(DateTime.PRECISION_DAY);
+    								}
     							}
     						}
-    					}
-    					else if ( isRegularIntervalReq && (intervalBaseReq == TimeInterval.HOUR) && (intervalMultReq == 24) && read24HourAsDay ) {
-    						// 24Hour in KiWIS but want 1Day output:
-    						// - adjustment will not occur if IrregularInterval was specified
-    						// - adjust the KiWIS timestamp to previous day (time will be discarded).
-    						dateTime.addDay(-1);
-    						dateTime.setHour(0); // Should not be used.
-   							dateTime.setPrecision(DateTime.PRECISION_DAY);
-    					}
+    						else if ( isRegularIntervalReq && (intervalBaseReq == TimeInterval.HOUR) && (intervalMultReq == 24) && read24HourAsDay ) {
+    							// 24Hour in KiWIS but want 1Day output:
+    							// - adjustment will not occur if IrregularInterval was specified
+    							// - adjust the KiWIS timestamp to previous day (time will be discarded).
+    							dateTime.addDay(-1);
+    							dateTime.setHour(0); // Should not be used.
+    							dateTime.setPrecision(DateTime.PRECISION_DAY);
+    						}
 
-    					if ( irregularInterval != null ) {
-    						// Irregular interval output was requested:
-    						// - don't need to do adjustments below for day and 24Hour
-    						// - set the precision based on what was requested
-    						dateTime.setPrecision(irregularInterval.getIrregularIntervalPrecision());
-    					}
+    						if ( irregularInterval != null ) {
+    							// Irregular interval output was requested:
+    							// - don't need to do adjustments below for day and 24Hour
+    							// - set the precision based on what was requested
+    							dateTime.setPrecision(irregularInterval.getIrregularIntervalPrecision());
+    						}
     					
-    					// Set the data value in the time series:
-    					// - the date/time will be copied if necessary and the precision set to be consistent with the time series
-    					if ( Message.isDebugOn ) {
-    						Message.printStatus(2, routine, "  Setting " + dateTime + " value=" + value
-    							+ " flag=" + dataFlag + " for interpolationType=" + interpolationType );
+    						// Set the data value in the time series:
+    						// - the date/time will be copied if necessary and the precision set to be consistent with the time series
+    						if ( Message.isDebugOn ) {
+    							Message.printStatus(2, routine, "  Setting " + dateTime + " value=" + value
+    								+ " flag=\"" + dataFlag + "\" for interpolationType=" + interpolationType );
+    						}
+    						if ( ts.setDataValue(dateTime, value, dataFlag, duration) == 0 ) {
+    							// Track points that are not inserted because may be an issue with the period due to
+    							// adjusted date/times not aligning with the allocated period.
+    							++notInsertedCount;
+    						}
     					}
-    					if ( ts.setDataValue(dateTime, value, dataFlag, duration) == 0 ) {
-    						// Track points that are not inserted because may be an issue with the period due to
-    						// adjusted date/times not aligning with the allocated period.
-    						++notInsertedCount;
-    					}
+    				}
+    				catch ( Throwable e ) {
+    					// Catch a Throwable:
+    					// - Exception may not be general enough
+    					// - if the plugin code and TSTool code are incompatible, may get unexpected errors
+						++valueErrorCount;
+						Message.printWarning(3, routine, "  Error processing value (" + e + ")." );
+						if ( valueErrorCount <= 50 ) {
+							Message.printWarning(3, routine, e );
+						}
     				}
     			}
     			if ( badDateTimeCount > 0 ) {
     				//problems.add("Time series had " + badDateTimeCount + " bad timestamps.  See the log file.");
-    				throw new Exception ("Time series had " + badDateTimeCount + " bad timestamps.  See the log file.");
+    				String message = "  Time series had " + badDateTimeCount + " bad timestamps.  See the log file.";
+    				Message.printWarning(3,routine,message);
+    				throw new Exception (message);
     			}
     			if ( badValueCount > 0 ) {
     				//problems.add("Time series had " + badValueCount + " bad data values.  See the log file.");
-    				throw new Exception("Time series had " + badValueCount + " bad data values.  See the log file.");
+    				String message = "  Time series had " + badValueCount + " bad data values.  See the log file.";
+    				Message.printWarning(3,routine,message);
+    				throw new Exception(message);
     			}
     			if ( badInterpolationTypeCount > 0 ) {
+    				String message = "  Time series had " + badInterpolationTypeCount + " bad interpolation types.  See the log file.";
     				//problems.add("Time series had " + badInterpolationTypeCount + " bad interpolation types.  See the log file.");
-    				throw new Exception ("Time series had " + badInterpolationTypeCount + " bad interpolation types.  See the log file.");
+    				Message.printWarning(3,routine,message);
+    				throw new Exception (message);
+    			}
+    			if ( valueErrorCount > 0 ) {
+    				String message = "  Time series had " + valueErrorCount + " errors setting values.  See the log file.";
+    				//problems.add("Time series had " + badDateTimeCount + " bad timestamps.  See the log file.");
+    				Message.printWarning(3,routine,message);
     			}
     		}
     		
@@ -1643,6 +1670,7 @@ public class KiWISDataStore extends AbstractWebServiceDataStore implements DataS
     		ts.setProperty("ts.DayNonZeroHourCount", new Integer(dayNonZeroHourCount));
     		ts.setProperty("ts.NotInsertedCount", new Integer(notInsertedCount));
     		ts.setProperty("ts.GetTimeSeriesValuesUrl", valuesUrl.toString());
+    		ts.setProperty("ts.SetDataValueErrorCount", new Integer(valueErrorCount));
     		
     		// In order to avoid confusion, throw exceptions for cases that may be misinterpreted.
     		if ( (intervalBaseReq == TimeInterval.DAY) && (intervalMultReq == 1) && (dayNonZeroHourCount > 0)) {
@@ -1703,33 +1731,13 @@ public class KiWISDataStore extends AbstractWebServiceDataStore implements DataS
 		if ( ifp != null ) {
 	        int nfg = ifp.getNumFilterGroups ();
 	        InputFilter filter;
-	        String ifpWhereClause=""; // A where clause that is being formed.
 	        for ( int ifg = 0; ifg < nfg; ifg++ ) {
 	            filter = ifp.getInputFilter ( ifg );
-	            // Handle list where clauses:
-	            // - TODO smalers, 2019-12-14 for now hard-code to same as in the input filter
-	            String whereLabel = filter.getWhereInternal2();
 	            //Message.printStatus(2, routine, "IFP whereLabel =\"" + whereLabel + "\"");
 	            boolean special = false; // TODO smalers 2022-12-26 might add special filters.
 	            if ( special ) {
 	            }
 	            else {
-	            	// Specific where clauses like station description.
-	            	// This will return null if the where clause is empty.
-	            	/*
-	            	ifpWhereClause = DMIUtil.getWhereClauseFromInputFilter(this, filter, ifp.getOperator(ifg), true);
-	            	if (ifpWhereClause != null) {
-	        	    	try {
-	        		    	q.addWhereClause(ifpWhereClause);
-	        	    	}
-	        	    	catch ( Exception e ) {
-	        		    	message = "Error adding where clause for input filter (" + e + ").";
-	        		    	Message.printWarning(3,routine,message);
-	        		    	// Rethrow because don't want inaccurate query results.
-	        		    	throw new RuntimeException ( message, e );
-	        	    	}
-	            	}
-	            	*/
 	            	// Add the query parameter to the URL.
 				    filter = ifp.getInputFilter(ifg);
 				    String queryClause = WebUtil.getQueryClauseFromInputFilter(filter,ifp.getOperator(ifg));

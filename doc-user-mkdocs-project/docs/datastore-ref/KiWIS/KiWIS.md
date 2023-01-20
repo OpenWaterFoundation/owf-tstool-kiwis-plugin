@@ -209,7 +209,7 @@ The following are other specifications related to TSTool plugin integration with
         and the time zone can be specified at station and time series level in the database.
     2.  The TSTool KiWIS plugin currently does not take any specific actions with the time zone in returned values.
         Time series period and data values use times read from data without attempting to interpret or shift time zone.
-6.  **Timestamp and Data Interval:**:
+6.  **Timestamp and Data Interval:**
     1.  Irregular interval:
         *   The timestamp indicates the time of the observation or computed value.
         *   No adjustment to the timestamp is required.
@@ -243,6 +243,7 @@ KiWIS Interpolation Types (<a href="../interpolation-type.png">see also the full
 ## Limitations ##
 
 The following limitations and design issues have been identified during development of the KiWIS plugin.
+Additional software development is required to overcome these limitations.
 
 1.  **Web service version:**
     1.  There is currently no way to retrieve the web service version from web services.
@@ -265,8 +266,14 @@ The following limitations and design issues have been identified during developm
         For example, requesting a partial day returns the entire day.
         This issue may need additional study to resolve.
 4.  **Month and Year Interval:**
-    1.  **Not currently supported by the TSTool KiWIS plugin.**
-5.  **Time series manipulation:**
+    1.  **Month and year interval are not currently supported by the TSTool KiWIS plugin.**
+        More information is needed to understand whether the timestamp time is significant or can
+        be ignored, similar to the day interval midnight issue.
+5.  **Regular interval interpolation types:**
+    1.  Interpolation type is used to determine whether the timestamp in KiWIS is at the beginning
+        or end of a regular interval.  Currently the "Linear until next timestep" interpolation interval
+        is not handled because it is not clear if the timestamp can be moved to the end of the interval.
+6.  **Time series manipulation:**
     1.  The KiWIS `getTimeseriesValues` service is quite complex and allows returning many fields
         and performing manipulations on the time series, such as aggregating and filling.
         Similar manipulations are provided by TSTool commands.
