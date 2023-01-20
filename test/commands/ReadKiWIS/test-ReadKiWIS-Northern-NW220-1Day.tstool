@@ -3,6 +3,7 @@
 # - set the period so that results are predictable
 # - use data from Northern Water system
 StartLog(LogFile="Results/test-ReadKiWIS-Northern-NW220-1Day.tstool.log")
+# SetDebugLevel(LogFileLevel=1)
 # Read the full period.
 SetInputPeriod(InputStart="2022-01-01",InputEnd="2022-01-15")
 ReadKiWIS(DataStore="KiWIS-northern",DataType="rhum_vais_Avg",Interval="1Day",LocId="NW220",TsShortName="Day.Mean")
@@ -14,3 +15,4 @@ CompareFiles(InputFile1="expected-results/test-ReadKiWIS-Northern-NW220-1Day-out
 # Read the data using WebGet to visually confirm the results.
 WebGet(URI="https://data.northernwater.org/KiWIS/KiWIS?datasource=0&service=kisters&type=queryServices&request=getTimeseriesValues&format=csv&ts_id=25099010&returnfields=Timestamp%2CValue%2CQuality+Code%2CInterpolation+Type&from=2022-01-01+00%3A00&to=2022-01-15+00%3A00",EncodeURI=False,LocalFile="results/test-ReadKiWIS-Northern-NW220-1Day.csv")
 ReadTableFromDelimitedFile(TableID="WebGetTable",InputFile="results/test-ReadKiWIS-Northern-NW220-1Day.csv",Delimiter=";",ColumnNames="Timestamp,Value,Quality Code,Interpolation Type")
+# SetDebugLevel(ScreenLevel=0,LogFileLevel=0)

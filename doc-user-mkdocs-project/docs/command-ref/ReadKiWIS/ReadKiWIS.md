@@ -201,6 +201,22 @@ Refer to the TSTool log file.  Use the
 [`SetDebugLevel`](https://opencdss.state.co.us/tstool/latest/doc-user/command-ref/SetDebugLevel/SetDebugLevel/) command
 to increase the amount of output for debugging.
 
+If a request exceeds the KiWIS record limit, an error may be generated reading the time series.
+Copy and paste the `ts.GetTimeSeriesValuesUrl` property from the time series
+(right click on the time series in TSTool ***Results*** and then use ***Time Series Properties***) into a browser.  
+If a message is shown similar to the following, it may be a record limit issue.
+A workaround is to request a period for the query rather than the default of the full time series period.
+This issue is being evaluated.
+
+```
+<ExceptionReport>
+<Exception exceptionCode="DatasourceError">
+<ExceptionText>Error getting tsdata from WDP.</ExceptionText>
+</Exception>
+</ExceptionReport>
+```
+
+
 ## See Also ##
 
 *   [`CopyTimeSeriesPropertiesToTable`](https://opencdss.state.co.us/tstool/latest/doc-user/command-ref/CopyTimeSeriesPropertiesToTable/CopyTimeSeriesPropertiesToTable/) command

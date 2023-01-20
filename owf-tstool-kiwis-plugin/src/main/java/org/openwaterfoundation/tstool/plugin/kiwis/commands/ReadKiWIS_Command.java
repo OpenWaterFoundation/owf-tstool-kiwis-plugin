@@ -567,7 +567,7 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
 			// Have a datastore so try to read.
         	// See if a Where has been specified by checking for the first Where clause.
 			String WhereN = parameters.getValue ( "Where" + 1 );
-			//if ( (WhereN == null) || WhereN.isEmpty() ) {
+			//if ( (WhereN == null) || WhereN.isEmpty() ) { // }
 			if ( (LocId != null) && !LocId.isEmpty() ) {
 				// Have single location ID so try to read the matching time series.
 				TSIdent tsident = new TSIdent();

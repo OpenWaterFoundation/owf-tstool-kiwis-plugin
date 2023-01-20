@@ -9,6 +9,8 @@
 
 **Feature release - enable features including up to daily interval.**
 
+**This plugin version requires at least TSTool version 14.5.3.**
+
 *   ![new](change.png) [1.1.0] The [Datastore documentation](../datastore-ref/KiWIS/KiWIS.md)
     has been updated to reflect updates:
     +   The `ServiceRootURI` configuration file property must now contain everything prior to the service name,
