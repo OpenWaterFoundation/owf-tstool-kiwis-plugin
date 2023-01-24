@@ -12,21 +12,25 @@
 # 103388 => ['27775010','0'], #Hansen Feeder Canal Loveland Turnout (HFCLOVCO)
 # 103389 => ['28706010','0'], #Willow Creek above Willow Creek Reservoir (WILABVCO)
 # 103381 => ['28758010','0'], #North Inlet near Grand Lake (NORINLET)
-SetInputPeriod(InputStart="CurrentToMinute - 60day",InputEnd="CurrentToMinute")
+#
+# Use a short period similar to operations.
+# Use a longer period to confirm that data are available (some are shut down during winter?.
+# SetInputPeriod(InputStart="CurrentToMinute - 60day",InputEnd="CurrentToMinute")
+SetInputPeriod(InputStart="CurrentToMinute - 1Year",InputEnd="CurrentToMinute")
 # ts_id=27038010, Handy ditch (not found or is it disabled for the season?)
 # ts_id=28720010, East Inlet upstr of Grand Lake
-FS-0020.KiWIS.Q-Final.~KiWIS-northern
+FS-0020.KiWIS.Q-Final.IrregSecond~KiWIS-northern
 # ts_id=28433010, Colorado Riv dwnstr of KB Ditch
-M-0002.KiWIS.Q-Final.~KiWIS-northern
+M-0002.KiWIS.Q-Final.IrregSecond~KiWIS-northern
 # ts_id=28740010, Colorado Riv upstr Shadow Mountain Res
-M-0009.KiWIS.Q-Final.~KiWIS-northern
+M-0009.KiWIS.Q-Final.IrregSecond~KiWIS-northern
 # ts_id=30061010, Colorado Riv upstream of Hot Sulphur Springs
-M-0006.KiWIS.Q-Final.~KiWIS-northern
+M-0006.KiWIS.Q-Final.IrregSecond~KiWIS-northern
 # ts_id=28416010, Colorado Riv dwnstr Williams Fork confl-Parshall
-M-0005.KiWIS.Q-Final.~KiWIS-northern
+M-0005.KiWIS.Q-Final.IrregSecond~KiWIS-northern
 # ts_id=27775010, Boulder and Whiterock Ditch Turnout #1
-FS-0008.KiWIS.Q-Final.~KiWIS-northern
+FS-0008.KiWIS.Q-Final.IrregSecond~KiWIS-northern
 # ts_id=28706010, Willow Crk, USGS Gage at C-Lazy-U
-FS-0093.KiWIS.Q-Final.~KiWIS-northern
+FS-0093.KiWIS.Q-Final.IrregSecond~KiWIS-northern
 # ts_id=28758010, North Inlet upstr of Grand Lake
-FS-0046.KiWIS.Q-Final.~KiWIS-northern
+FS-0046.KiWIS.Q-Final.IrregSecond~KiWIS-northern
