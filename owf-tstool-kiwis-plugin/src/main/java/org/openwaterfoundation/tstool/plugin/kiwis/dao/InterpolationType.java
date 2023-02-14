@@ -33,7 +33,7 @@ public enum InterpolationType {
 	/**
 	Unknown interpolation type.
 	*/
-	UNKNOWN ( "Unknown interpolation", new int[] {}, -99,
+	UNKNOWN ( "Unknown interpolation", new int[] {}, -99999,
 		"Unknown interpolation type." ),
 
 	/**
@@ -56,16 +56,20 @@ public enum InterpolationType {
 		"Instantaneously recorded continuous time series data." ),
 
 	/**
-	Constant until next time stamp.
+	Constant until next time stamp, indicated by the 3 at the end.
+	- 103, 203, 303 are not in documentation and are assumed
 	*/
-	CONSTANT_UNTIL_NEXT_TIMESTAMP ( "Constant until next time stamp", new int[] { 403, 503, 603, 703}, -1,
+	CONSTANT_UNTIL_NEXT_TIMESTAMP ( "Constant until next time stamp", new int[] { 103, 203, 303, 403, 503, 603, 703}, -1,
 		"The interval main time stamp is stored at the beginning of the interval."
 		+ " The mean is representative until the next time stamp."),
 
 	/**
-	Constant since previous time stamp.
+	Constant since previous time stamp, indicated by the 4 at the end:
+	- 104 is not in documentation but has been verified on the Northern Water system
+	- 204, 304 are not in documentation and are assumed
 	*/
-	CONSTANT_SINCE_PREVIOUS_TIMESTAMP ( "Constant since previous time stamp", new int[] { 404, 504, 604, 704}, 1,
+	// TODO smalers 2023-02-01 need to confirm what 104 is.
+	CONSTANT_SINCE_PREVIOUS_TIMESTAMP ( "Constant since previous time stamp", new int[] { 104, 204, 304, 404, 504, 604, 704}, 1,
 		"The interval main time stamp is stored at the end of the interval."
 		+ " The mean is representative since the previous time stamp."),
 
@@ -125,8 +129,8 @@ public enum InterpolationType {
 	}
 
 	/**
-	Get the list of command types, in appropriate order.
-	@return the list of command types.
+	Get the list of interpolation types, in appropriate order.
+	@return the list of interpolation types.
 	*/
 	public static List<InterpolationType> getChoices() {
     	List<InterpolationType> choices = new ArrayList<>();
@@ -168,6 +172,13 @@ public enum InterpolationType {
 	public int getTimestampPos () {
 		return this.timestampPos;
 	}
+	
+	/**
+	 * Return the type numbers corresponding to the interpolation type.
+	 */
+	public int [] getTypeNums () {
+		return this.typeNums;
+	}
 
 	/**
 	Return the name for the type.
@@ -184,9 +195,6 @@ public enum InterpolationType {
 	@return the enumeration value given an integer type, or UNKNOWN if not matched
 	*/
 	public static InterpolationType valueOf ( int typeNum ) {
-	    if ( typeNum < 0 ) {
-        	return UNKNOWN;
-    	}
 	    // Iterate through the enumeration values.
     	InterpolationType [] values = values();
     	for ( InterpolationType t : values ) {

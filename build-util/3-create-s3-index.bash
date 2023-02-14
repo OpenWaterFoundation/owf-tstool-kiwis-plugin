@@ -559,9 +559,9 @@ uploadIndexFiles() {
   logInfo "Invalidating files so that CloudFront will make new files available..."
   logInfo "  Save output to: ${tmpFile}"
   #logInfo "Running: ${awsExe} cloudfront create-invalidation --distribution-id \"${cloudFrontDistributionId}\" --paths '/tstool-kiwis-plugin/index.html*' --output json --profile \"${awsProfile}\""
-  # The following is needed to avoid MinGW mangling the paths, just in case a path without * is used:
-  # - tried to use a variable for the prefix but that did not work
   if [ "${operatingSystem}" = "mingw" ]; then
+    # The following is needed to avoid MinGW mangling the paths, just in case a path without * is used:
+    # - tried to use a variable for the prefix but that did not work
      MSYS_NO_PATHCONV=1 ${awsExe} cloudfront create-invalidation --distribution-id "${cloudFrontDistributionId}" --paths '/tstool-kiwis-plugin/index.html' '/tstool-kiwis-plugin/' '/tstool-kiwis-plugin' --output json --profile "${awsProfile}" | tee ${tmpFile}
   else
     ${awsExe} cloudfront create-invalidation --distribution-id "${cloudFrontDistributionId}" --paths '/tstool-kiwis-plugin/index.html' '/tstool-kiwis-plugin/' '/tstool-kiwis-plugin' --output json --profile "${awsProfile}" | tee ${tmpFile}

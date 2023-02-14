@@ -1,9 +1,9 @@
-// PluginMetadata - metadata for the plugin
+// PluginMetadata - metadata for the TSTool KiWIS plugin
 
 /* NoticeStart
 
 OWF TSTool KiWIS Plugin
-Copyright (C) 2022 Open Water Foundation
+Copyright (C) 2022-2023 Open Water Foundation
 
 OWF TSTool KiWIS Plugin is free software:  you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -26,15 +26,15 @@ public class PluginMeta {
 	/**
 	 * Plugin version.
 	 */
-	public static final String VERSION = "1.1.0 (2023-01-19)";
-	
+	public static final String VERSION = "1.1.1 (2023-02-13)";
+
 	/**
-	 * Get the documentation root Url, used for command help.
+	 * Get the documentation root URL, used for command help.
 	 * This should be the folder in which the index.html file exists, for example:
 	 *	  https://software.openwaterfoundation.org/owf-tstool-kiwis-plugin/latest/doc-user/
 	 */
 	public static String documentationRootUrl() {
-		// Hard code for now until figure out how to configure in the META
+		// Hard code for now until figure out how to configure in the META-INF.
 		String url = "https://software.openwaterfoundation.org/owf-tstool-kiwis-plugin/latest/doc-user/";
 		return url;
 	}
