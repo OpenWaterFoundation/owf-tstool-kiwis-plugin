@@ -216,7 +216,9 @@ The following are other specifications related to TSTool plugin integration with
     2.  Regular interval less than a day:
         *   If necessary, timestamps are adjusted to align with the end of the interval for a value.
             Time series values that have "Constant until next time stamp" interpolation types as shown in the following figure are shifted.
-        *   The value applies for the interval ending with the timestamp.
+        *   Although not shown in the following figure, interpolation type numbers 103, 203, and 303 are treated similar to 403, 503, 603, and 703.
+        *   Although not shown in the following figure, interpolation type numbers 104, 204, and 304 are treated similar to 404, 504, 604, and 704.
+        *   The data value value applies for the interval ending with the timestamp.
     3.  Regular interval for a day:
         *   If necessary, timestamps are adjusted to be the end of the interval for a value.
             Time series values that have "Constant until next time stamp" interpolation types as shown in the following figure are shifted.
@@ -226,7 +228,7 @@ The following are other specifications related to TSTool plugin integration with
             read as an irregular time series that includes the offset hour.
         *   For a time as shown above and `ts_spacing` of `P1D` the TSTool KiWIS plugin will
             by default use a date of `2022-04-21` (previous day as if hour 24 is midnight) and discard the time.
-            The resulting data should be interpreted as the value applying for the day.
+            The resulting data should be interpreted as the data value applying for the day.
         *   See the [`ReadKiWIS`](../../command-ref/ReadKiWIS/ReadKiWIS.md) command
             `IrregularInterval`, `Read24HourAsDay`, and `ReadDayAs24Hour` parameters to control how daily time series are read.
     4.  Regular interval for longer than day:

@@ -122,6 +122,19 @@ public class TimeSeriesValue {
 	}
 
 	/**
+	 * Set the interpolation type.
+	 * @param interpolationType interpolation type as an enumeration
+	 */
+	public void setInterpolationType ( InterpolationType interpolationType ) {
+		// Set the enumeration.
+		this.interpolationType = interpolationType;
+		// Set the numeric interpolation type only if one number is in the array.
+		if ( interpolationType.getTypeNums().length == 1 ) {
+			this.interpolationTypeNum = interpolationType.getTypeNums()[0];
+		}
+	}
+
+	/**
 	 * Set the quality code.
 	 * @param quality code.
 	 */

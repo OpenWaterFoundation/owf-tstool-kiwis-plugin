@@ -409,8 +409,17 @@ if [ "${answer}" = "y" ]; then
   else
     logInfo "Found CloudFront distribution ID: ${distributionId}"
   fi
+  # Invalidate for CloudFront so that new version will be displayed:
+  # - see:  https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/Invalidation.html
+  # - TODO smalers 2020-04-13 for some reason invalidating /index.html does not work, have to do /index.html*
   logInfo "Invalidating files so that CloudFront will make new files available..."
-  ${awsExe} cloudfront create-invalidation --distribution-id ${cloudFrontDistributionId} --paths "/tstool-kiwis-plugin/latest/doc-user/*" --output json --profile "${awsProfile}" | tee ${tmpFile}
+  if [ "${operatingSystem}" = "mingw" ]; then
+    # The following is needed to avoid MinGW mangling the paths, just in case a path without * is used:
+    # - tried to use a variable for the prefix but that did not work
+    MSYS_NO_PATHCONV=1 ${awsExe} cloudfront create-invalidation --distribution-id ${cloudFrontDistributionId} --paths "/tstool-kiwis-plugin/latest/doc-user/*" --output json --profile "${awsProfile}" | tee ${tmpFile}
+  else
+    ${awsExe} cloudfront create-invalidation --distribution-id ${cloudFrontDistributionId} --paths "/tstool-kiwis-plugin/latest/doc-user/*" --output json --profile "${awsProfile}" | tee ${tmpFile}
+  fi
   errorCode=${PIPESTATUS[0]}
   if [ $errorCode -ne 0 ]; then
     logError " "

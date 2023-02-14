@@ -546,15 +546,16 @@ public class KiWISDataStore extends AbstractWebServiceDataStore implements DataS
 		
 		// Use the cached time series catalog read at startup.
 		List<TimeSeriesCatalog> tscatalogList = getTimeSeriesCatalog(false);
+		Message.printStatus(2, routine, "  Have " + tscatalogList.size() + " cached time series from the catalog.");
 		for ( TimeSeriesCatalog tscatalog : tscatalogList ) {
 			if ( doCheckDataType ) {
+				// Only check the first part of the data type, which is the 'stationparameter_no'.
 				if ( !dataType.equals(tscatalog.getStationParameterNo())) {
 					// Data type does not match 'stationparameter_no'.
 					continue;
 				}
 			}
-			// Only add the interval if not already in the list:
-			// - TODO smalers 2023-01-19 for now use a local method because don't want to require new TSTool version
+			// Only add the interval if not already in the list.
 			if ( !StringUtil.isInList(dataIntervals, tscatalog.getDataInterval())) {
 				dataIntervals.add(tscatalog.getDataInterval());
 			}
@@ -571,7 +572,8 @@ public class KiWISDataStore extends AbstractWebServiceDataStore implements DataS
 	
 			dataIntervals.add("*");
 			if ( dataIntervals.size() > 1 ) {
-				// Also add at the end.
+				// Also add at the beginning to simplify selections:
+				// - could check for a small number like 5 but there should always be a few
 				dataIntervals.add(0,"*");
 			}
 		}
@@ -1206,6 +1208,12 @@ public class KiWISDataStore extends AbstractWebServiceDataStore implements DataS
     		// - if necessary: station_no.'stationparamer_no'-'ts_shortname'
     		String stationNo = tsidentReq.getLocation();
     		List<String> parts = StringUtil.breakStringList(tsidentReq.getType(), "-", StringUtil.DELIM_ALLOW_STRINGS);
+    		if ( Message.isDebugOn ) {
+    			Message.printStatus(2,routine,"Splitting TSIdent data type: \"" + tsidentReq.getType() + "\"");
+    			for ( String part : parts ) {
+    				Message.printStatus(2,routine,"  Part: \"" + part + "\"");
+    			}
+    		}
     		String stationParameterNo = parts.get(0);
     		String tsShortName = parts.get(1);
     		// Read the catalog matching the KiWIS 'ts_path'.
@@ -1216,11 +1224,11 @@ public class KiWISDataStore extends AbstractWebServiceDataStore implements DataS
     		List<TimeSeriesCatalog> tslist = readTimeSeriesCatalog(dataTypeReq, dataIntervalReq, ifp, kiwisTsid, kiwisTsPath );
     		if ( tslist.size() == 0 ) {
     			// Did not match any time series.
-    			throw new RuntimeException ( "No time series found matching ts_id = " + kiwisTsid );
+    			throw new RuntimeException ( "No time series found matching TSID = " + tsidentReq );
     		}
     		else if ( tslist.size() > 1 ) {
     			// Matched more than one time series so identifier information is not unique.
-    			throw new RuntimeException ( "Matched " + tslist.size() + " time series for ts_id = " + kiwisTsid + ", expecting 1.");
+    			throw new RuntimeException ( "Matched " + tslist.size() + " time series for TSID = " + tsidentReq + ", expecting 1.");
     		}
     		else {
     			// Matched a single time series so can continue:
@@ -1952,6 +1960,7 @@ public class KiWISDataStore extends AbstractWebServiceDataStore implements DataS
 			TimeSeriesValue timeSeriesValue = null;
 			int valueCount = 0;
 			boolean fieldCountWarned = false;
+			String interpolationType;
 			while ( (line = reader.readLine()) != null ) {
 				if ( line.isEmpty() ) {
 					// Totally empty line.
@@ -1977,8 +1986,18 @@ public class KiWISDataStore extends AbstractWebServiceDataStore implements DataS
 					timeSeriesValue.setTimestamp(tokens.get(0));
 					timeSeriesValue.setValue(tokens.get(1));
 					timeSeriesValue.setQualityCode(tokens.get(2));
-					if ( StringUtil.isInteger(tokens.get(3)) ) {
-						timeSeriesValue.setInterpolationType(Integer.parseInt(tokens.get(3)));
+					interpolationType = tokens.get(3).trim();
+					//Message.printStatus(2, routine, "interpolationType=" + interpolationType);
+					//if ( interpolationType.isEmpty() ) {
+					//	timeSeriesValue.setInterpolationType(InterpolationType.MISSING_INTERPOLATION);
+					//}
+					//else
+					if ( StringUtil.isInteger(interpolationType) ) {
+						// If interpolation type is missing, set to missing.
+						timeSeriesValue.setInterpolationType(Integer.parseInt(interpolationType));
+					}
+					else {
+						// Interpolation type will be set to unknown and will cause an error when time series values are processed.
 					}
 					// Add the value object to the list to return.
 					timeSeriesValues.add(timeSeriesValue);

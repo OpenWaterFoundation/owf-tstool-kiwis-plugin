@@ -1,9 +1,24 @@
 # TSTool / KiWIS Data Web Services Plugin / Release Notes #
 
+* [Changes in Version 1.1.1](#changes-in-version-111)
 * [Changes in Version 1.1.0](#changes-in-version-110)
 * [Changes in Version 1.0.0](#changes-in-version-100)
 
 ----------
+
+## Changes in Version 1.1.1 ##
+
+**Maintenance release to fix issues discovered during testing.**
+
+*   ![bug](bug.png) [1.1.1] Enable handling of interpolation type numbers 103, 203, and 303,
+    with behavior similar to interpolation types 403, 503, 603, and 703.
+    This controls whether the KiWIS timestamp for interval time series is at the beginning or the end of the interval.
+*   ![bug](bug.png) [1.1.1] Enable handling of interpolation type numbers 104, 204, and 304,
+    with behavior similar to interpolation types 404, 504, 604, and 704.
+    This controls whether the KiWIS timestamp for interval time series is at the beginning or the end of the interval.
+*   ![bug](bug.png) [1.1.1] Previously, time series identifiers (TSIDs) similar to `'stationparameter_no'-ts_shortname`
+    (single quotes around the first part) resulted in errors.  This has been fixed.
+    **This requires updating to at least TSTool 14.5.4.**
 
 ## Changes in Version 1.1.0 ##
 
@@ -11,7 +26,7 @@
 
 **This plugin version requires at least TSTool version 14.5.3.**
 
-*   ![new](change.png) [1.1.0] The [Datastore documentation](../datastore-ref/KiWIS/KiWIS.md)
+*   ![change](change.png) [1.1.0] The [Datastore documentation](../datastore-ref/KiWIS/KiWIS.md)
     has been updated to reflect updates:
     +   The `ServiceRootURI` configuration file property must now contain everything prior to the service name,
         which provides flexibility for different systems.

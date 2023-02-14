@@ -1,0 +1,13 @@
+# Test reading a KiWIS time series:
+# - read a single Q-Seep time series with single quotes around the first part of the data type
+# - set the period so that results are predictable
+# - use data from Northern Water system, irregular interval
+StartLog(LogFile="Results/test-ReadKiWIS-single-Northern-SC-0042-Depth.tstool.log")
+# Read the full period.
+SetInputPeriod(InputStart="2022-12-30 00:00",InputEnd="2023-01-14 12:00")
+ReadKiWIS(DataStore="KiWIS-northern-1",DataType="Q-Seep",Interval="IrregSecond",LocId="SC-0042",TsShortName="WMS")
+# Uncomment the following to write the expected results.
+# WriteDateValue(OutputFile="expected-results/test-ReadKiWIS-single-Northern-SC-0042-Q-Seep-WMS-out.dv")
+WriteDateValue(OutputFile="results/test-ReadKiWIS-single-Northern-SC-0042-Q-Seep-WMS-out.dv")
+# Compare the results with expected results.
+CompareFiles(InputFile1="expected-results/test-ReadKiWIS-single-Northern-SC-0042-Q-Seep-WMS-out.dv",InputFile2="results/test-ReadKiWIS-single-Northern-SC-0042-Q-Seep-WMS-out.dv",IfDifferent=Warn)
