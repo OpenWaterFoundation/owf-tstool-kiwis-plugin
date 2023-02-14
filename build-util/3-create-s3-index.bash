@@ -232,7 +232,7 @@ createIndexHtmlFile_Table() {
         # Documentation links for development and user documentation are only shown if exist
         # - the file returned by curl is actually the index.html file
         docDevUrl=sprintf("https://software.openwaterfoundation.org/tstool-kiwis-plugin/%s/doc-dev",downloadFileVersion)
-        docDevCurl=sprintf("curl --output /dev/null --silent --head --fail \"%s\"",docDevUrl)
+        docDevCurl=sprintf("curl --insecure --output /dev/null --silent --head --fail \"%s\"",docDevUrl)
         returnStatus=system(docDevCurl)
         if ( returnStatus == 0 ) {
           docDevHtml=sprintf("<a href=\"%s\">View</a>",docDevUrl)
@@ -241,7 +241,7 @@ createIndexHtmlFile_Table() {
           docDevHtml=""
         }
         docUserUrl=sprintf("https://software.openwaterfoundation.org/tstool-kiwis-plugin/%s/doc-user",downloadFileVersion)
-        docDevCurl=sprintf("curl --output /dev/null --silent --head --fail \"%s\"",docUserUrl)
+        docDevCurl=sprintf("curl --insecure --output /dev/null --silent --head --fail \"%s\"",docUserUrl)
         returnStatus=system(docDevCurl)
         if ( returnStatus == 0 ) {
           docUserHtml=sprintf("<a href=\"%s\">View</a>",docUserUrl)
