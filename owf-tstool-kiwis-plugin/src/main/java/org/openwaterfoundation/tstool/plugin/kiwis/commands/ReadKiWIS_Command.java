@@ -77,8 +77,8 @@ protected String _False = "False";
 protected String _True = "True";
 
 /**
-List of time series read during discovery.  These are TS objects but with mainly the
-metadata (TSIdent) filled in.
+List of time series read during discovery.
+These are TS objects but with mainly the metadata (TSIdent) filled in.
 */
 private List<TS> __discoveryTSList = null;
 
@@ -93,8 +93,7 @@ public ReadKiWIS_Command () {
 /**
 Check the command parameter for valid values, combination, etc.
 @param parameters The parameters for the command.
-@param command_tag an indicator to be used when printing messages, to allow a
-cross-reference to the original commands.
+@param command_tag an indicator to be used when printing messages, to allow a cross-reference to the original commands.
 @param warning_level The warning level to use when printing parse warnings
 (recommended is 2 for initialization, and 1 for interactive command editor dialogs).
 */
@@ -132,7 +131,7 @@ throws InvalidCommandParameterException {
             new CommandLogRecord(CommandStatusType.FAILURE,
                 message, "Specify the datastore." ) );
 	}
-	
+
 	// TODO SAM 2023-01-02 Need to check the WhereN parameters.
 
 	if ( (InputStart != null) && !InputStart.equals("") &&
@@ -222,7 +221,7 @@ throws InvalidCommandParameterException {
 	}
 
 	// Make sure that some parameters are specified so that a query of all data is disallowed.
-	
+
 	int whereCount = 0;
 	if ( (Where1 != null) && !Where1.startsWith(";") ) {
 		++whereCount;
@@ -239,7 +238,7 @@ throws InvalidCommandParameterException {
 	if ( (Where5 != null) && !Where5.startsWith(";") ) {
 		++whereCount;
 	}
-	
+
 	boolean readOne = false;
 	boolean readMult = false;
 	if ( (LocId != null) && !LocId.isEmpty() ) {
@@ -272,7 +271,7 @@ throws InvalidCommandParameterException {
 		Message.printStatus(2, routine, "LocId=" + LocId + " whereCount=" + whereCount + " readOne=" + readOne + " readMult=" + readMult);
 		Message.printStatus(2, routine, "Where1=" + Where1 + " Where2=" + Where2 + " Where3=" + Where3 + " Where4=" + Where4 + " Where5=" + Where5);
 	}
-	
+
 	if ( readOne && readMult ) {
 		// Can only read one or multiple.
         message = "Parameters are specified to match a single time series and multiple time series (but not both).";
@@ -503,7 +502,7 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
 	if ( (Debug != null) && Debug.equalsIgnoreCase(_True) ) {
 		debug = true;
 	}
-	
+
     DateTime InputStart_DateTime = null;
     DateTime InputEnd_DateTime = null;
 	if ( commandPhase == CommandPhaseType.RUN ) {
@@ -661,11 +660,11 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
 						whereNList.add ( WhereN );
 					}
 				}
-	
+
 				// Initialize an input filter based on the data type.
-	
+
 				InputFilter_JPanel filterPanel = null;
-	
+
 				// Create the input filter panel.
 				String dataTypeReq = "";
 			    if ( dataTypeReq.indexOf("-") > 0 ) {
@@ -674,13 +673,13 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
 			    else {
 			        dataTypeReq = DataType.trim();
 			    }
-	
+
 				filterPanel = new KiWIS_TimeSeries_InputFilter_JPanel ( dataStore, 5 );
-	
+
 				// Populate with the where information from the command:
 				// - the first part of the where should match the "whereLabelPersistent" used when constructing the input filter
 				// - the KiWIS internal field is used to help users correlate the TSTool filter to KiWIS web services
-	
+
 				String filter_delim = ";";
 				for ( int ifg = 0; ifg < nfg; ifg ++ ) {
 					WhereN = whereNList.get(ifg);
@@ -701,14 +700,14 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
 	                            message, "Report the problem to software support - also see the log file." ) );
 					}
 				}
-			
+
 				// Read the list of objects from which identifiers can be obtained.
-			
+
 				Message.printStatus ( 2, routine, "Getting the list of time series..." );
-			
+
 				// Create empty lists for catalogs from each major data category.
 				List<TimeSeriesCatalog> tsCatalogList = new ArrayList<>();
-				
+
 				// Read the catalog.
 				int size = 0;
 				try {
@@ -721,7 +720,7 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
 				catch ( Exception e ) {
 					// Probably no data.
 				}
-				
+
 				// Make sure that size is set.
 	       		if ( size == 0 ) {
 					Message.printStatus ( 2, routine,"No KiWIS web service time series were found." );
@@ -740,11 +739,11 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
 	                        Class.forName("RTi.TS.TS"),"Time Series", this));
 					return;
 	       		}
-			
+
 				// Else, convert each header object to a TSID string and read the time series.
-	
+
 				Message.printStatus ( 2, "", "Reading " + size + " time series..." );
-	
+
 				String tsidentString = null; // TSIdent string.
 				TS ts; // Time series to read.
 				TimeSeriesCatalog tsCatalog;
@@ -913,127 +912,51 @@ private void setDiscoveryTSList ( List<TS> discoveryTSList ) {
 
 /**
 Return the string representation of the command.
-@param props parameters for the command
+@param parameters parameters to include in the command
+@return the string representation of the command
 */
-public String toString ( PropList props ) {
-    if ( props == null ) {
-        return getCommandName() + "()";
-    }
-	StringBuffer b = new StringBuffer ();
-	String Alias = props.getValue("Alias"); // Alias added at end.
-    String DataStore = props.getValue("DataStore");
-    if ( (DataStore != null) && (DataStore.length() > 0) ) {
-        if ( b.length() > 0 ) {
-            b.append ( "," );
-        }
-        b.append ( "DataStore=\"" + DataStore + "\"" );
-    }
-	//String TSID = props.getValue("TSID");
-	//if ( (TSID != null) && (TSID.length() > 0) ) {
-	//	if ( b.length() > 0 ) {
-	//		b.append ( "," );
-	//	}
-	//	b.append ( "TSID=\"" + TSID + "\"" );
-	//}
-	//if ( (TSID == null) || TSID.equals("") ) {
-	    // The following need to be explicitly specified when not using the TSID.
-        String DataType = props.getValue("DataType");
-    	if ( (DataType != null) && (DataType.length() > 0) ) {
-    		if ( b.length() > 0 ) {
-    			b.append ( "," );
-    		}
-    		b.append ( "DataType=\"" + DataType + "\"" );
-    	}
-    	String Interval = props.getValue("Interval");
-    	if ( (Interval != null) && (Interval.length() > 0) ) {
-    		if ( b.length() > 0 ) {
-    			b.append ( "," );
-    		}
-    		b.append ( "Interval=\"" + Interval + "\"" );
-    	}
-	//}
-    // Match 1.
-    String LocId = props.getValue("LocId");
-  	if ( (LocId != null) && (LocId.length() > 0) ) {
-   		if ( b.length() > 0 ) {
-   			b.append ( "," );
-   		}
-   		b.append ( "LocId=\"" + LocId + "\"" );
-   	}
-    String TsShortName = props.getValue("TsShortName");
-  	if ( (TsShortName != null) && (TsShortName.length() > 0) ) {
-   		if ( b.length() > 0 ) {
-   			b.append ( "," );
-   		}
-   		b.append ( "TsShortName=\"" + TsShortName + "\"" );
-   	}
+public String toString ( PropList parameters ) {
+	String [] parameterOrder1 = {
+    	"DataStore",
+    	"DataType",
+    	"Interval",
+    	// Match 1.
+    	"LocId",
+    	"TsShortName"
+	};
   	// Match 1+.
 	String delim = ";";
+	List<String> whereParameters = new ArrayList<>();
     for ( int i = 1; i <= __numWhere; i++ ) {
-    	String where = props.getValue("Where" + i);
-    	if ( (where != null) && (where.length() > 0) && !where.startsWith(delim) ) {
-    		if ( b.length() > 0 ) {
-    			b.append ( "," );
-    		}
-    		b.append ( "Where" + i + "=\"" + where + "\"" );
+    	String where = parameters.getValue("Where" + i);
+    	if ( (where != null) && !where.isEmpty() && !where.startsWith(delim) ) {
+    		whereParameters.add("Where" + i);
     	}
     }
-    if ( (Alias != null) && (Alias.length() > 0) ) {
-        if ( b.length() > 0 ) {
-            b.append ( "," );
-        }
-        b.append ( "Alias=\"" + Alias + "\"" );
-    }
-	String InputStart = props.getValue("InputStart");
-	if ( (InputStart != null) && (InputStart.length() > 0) ) {
-		if ( b.length() > 0 ) {
-			b.append ( "," );
-		}
-		b.append ( "InputStart=\"" + InputStart + "\"" );
+	String [] parameterOrder2 = {
+		"Alias",
+		"InputStart",
+		"InputEnd",
+		"IrregularInterval",
+		"Read24HourAsDay",
+		"ReadDayAs24Hour",
+    	"Timezone",
+		"Debug",
+	};
+
+	// Format the final property list.
+	String [] parameterOrder = new String[parameterOrder1.length + whereParameters.size() + parameterOrder2.length];
+	int iparam = 0;
+	for ( int i = 0; i < parameterOrder1.length; i++ ) {
+		parameterOrder[iparam++] = parameterOrder1[i];
 	}
-	String InputEnd = props.getValue("InputEnd");
-	if ( (InputEnd != null) && (InputEnd.length() > 0) ) {
-		if ( b.length() > 0 ) {
-			b.append ( "," );
-		}
-		b.append ( "InputEnd=\"" + InputEnd + "\"" );
+	for ( int i = 0; i < whereParameters.size(); i++ ) {
+		parameterOrder[iparam++] = whereParameters.get(i);
 	}
-	String IrregularInterval = props.getValue("IrregularInterval");
-	if ( (IrregularInterval != null) && (IrregularInterval.length() > 0) ) {
-		if ( b.length() > 0 ) {
-			b.append ( "," );
-		}
-		b.append ( "IrregularInterval=\"" + IrregularInterval + "\"" );
+	for ( int i = 0; i < parameterOrder2.length; i++ ) {
+		parameterOrder[iparam++] = parameterOrder2[i];
 	}
-	String Read24HourAsDay = props.getValue("Read24HourAsDay");
-	if ( (Read24HourAsDay != null) && (Read24HourAsDay.length() > 0) ) {
-		if ( b.length() > 0 ) {
-			b.append ( "," );
-		}
-		b.append ( "Read24HourAsDay=" + Read24HourAsDay );
-	}
-	String ReadDayAs24Hour = props.getValue("ReadDayAs24Hour");
-	if ( (ReadDayAs24Hour != null) && (ReadDayAs24Hour.length() > 0) ) {
-		if ( b.length() > 0 ) {
-			b.append ( "," );
-		}
-		b.append ( "ReadDayAs24Hour=" + ReadDayAs24Hour );
-	}
-    String Timezone = props.getValue("Timezone");
-    if ( (Timezone != null) && (Timezone.length() > 0) ) {
-        if ( b.length() > 0 ) {
-            b.append ( "," );
-        }
-        b.append ( "Timezone=\"" + Timezone + "\"" );
-    }
-	String Debug = props.getValue("Debug");
-	if ( (Debug != null) && (Debug.length() > 0) ) {
-		if ( b.length() > 0 ) {
-			b.append ( "," );
-		}
-		b.append ( "Debug=" + Debug );
-	}
-    return getCommandName() + "("+ b.toString()+")";
+	return this.toString(parameters, parameterOrder);
 }
 
 }
