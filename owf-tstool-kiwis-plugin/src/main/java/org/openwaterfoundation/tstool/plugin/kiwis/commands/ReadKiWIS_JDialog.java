@@ -96,10 +96,10 @@ private SimpleJComboBox __Read24HourAsDay_JComboBox = null;
 private SimpleJComboBox __ReadDayAs24Hour_JComboBox = null;
 private JTextField __TSID_JTextField;
 private JTextField __InputStart_JTextField;
-private JTextField __InputEnd_JTextField;	
-//private JTextField __Timezone_JTextField;	
+private JTextField __InputEnd_JTextField;
+//private JTextField __Timezone_JTextField;
 private SimpleJComboBox	__Debug_JComboBox;
-			
+
 private JTextArea __command_JTextArea = null;
 // Contains all input filter panels.  Use the KiWISDataStore name/description and data type for each to
 // figure out which panel is active at any time.
@@ -613,7 +613,7 @@ private void initialize ( JFrame parent, ReadKiWIS_Command command ) {
    	JGUIUtil.addComponent(main_JPanel, new JLabel (
 		"Requests may be constrained by the software to prevent unintended large bulk queries." ),
 		0, ++y, 7, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
-   	
+
     // Add buttons for the documentation:
     // - the checkGUIState() method checks for and sets the URL in the button's action
 
@@ -624,9 +624,9 @@ private void initialize ( JFrame parent, ReadKiWIS_Command command ) {
 
     JGUIUtil.addComponent(main_JPanel, new JSeparator(SwingConstants.HORIZONTAL),
         0, ++y, 7, 1, 0, 0, insetsTLBR, GridBagConstraints.HORIZONTAL, GridBagConstraints.WEST);
-   	
+
    	__ignoreEvents = true; // So that a full pass of initialization can occur.
-   	
+
     JGUIUtil.addComponent(main_JPanel, new JLabel ( "KiWIS datastore:"),
         0, ++y, 1, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.EAST);
     __DataStore_JComboBox = new SimpleJComboBox ( false );
@@ -647,7 +647,7 @@ private void initialize ( JFrame parent, ReadKiWIS_Command command ) {
         1, y, 2, 1, 1, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
     JGUIUtil.addComponent(main_JPanel, new JLabel("Required - KiWIS datastore."),
         3, y, 4, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
-   	
+
     //JGUIUtil.addComponent(main_JPanel, inputFilterJPanel,
     //    0, ++y, 7, 1, 1, 0, insetsTLBR, GridBagConstraints.HORIZONTAL, GridBagConstraints.WEST);
 
@@ -753,7 +753,7 @@ private void initialize ( JFrame parent, ReadKiWIS_Command command ) {
 
     // Initialize all the filters (selection will be based on data store).
     initializeInputFilters ( __multipleTS_JPanel, ++yMult, dataStoreList );
-	
+
     JGUIUtil.addComponent(main_JPanel, new JLabel("Alias to assign:"),
         0, ++y, 1, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.EAST);
     __Alias_JTextField = new TSFormatSpecifiersJPanel(10);
@@ -1016,7 +1016,7 @@ public void keyPressed ( KeyEvent event ) {
 Need this to properly capture key events, especially deletes.
 */
 public void keyReleased ( KeyEvent event ) {
-	refresh();	
+	refresh();
 }
 
 public void keyTyped ( KeyEvent event ) {
@@ -1032,7 +1032,7 @@ public boolean ok () {
 
 /**
 Set the data type choices in response to a new datastore being selected.
-This should match the main TSTool interface
+This should match the main TSTool interface.
 @param datastore the datastore to use to determine the data types
 */
 private void populateDataTypeChoices ( KiWISDataStore datastore ) {
@@ -1081,8 +1081,8 @@ private void populateIntervalChoices ( KiWISDataStore datastore ) {
 
 /**
 Set the location ID choices in response to a new datastore being selected.
-The location choices are also in the where filter (for multiple time series) but a single location is
-needed when reading a single time series.
+The location choices are also in the where filter (for multiple time series)
+but a single location is needed when reading a single time series.
 @param datastore the datastore to use to determine the data types
 */
 private void populateLocIdChoices ( KiWISDataStore datastore ) {
@@ -1490,7 +1490,7 @@ private void refresh () {
 	//props.add ( "Timezone=" + Timezone );
 	Debug = __Debug_JComboBox.getSelected();
 	props.add ( "Debug=" + Debug );
-	__command_JTextArea.setText( __command.toString ( props ) );
+	__command_JTextArea.setText( __command.toString ( props ).trim() );
 
 	// Check the GUI state to determine whether some controls should be disabled.
 

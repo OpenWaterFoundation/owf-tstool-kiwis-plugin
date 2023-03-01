@@ -1,10 +1,20 @@
 # TSTool / KiWIS Data Web Services Plugin / Release Notes #
 
-* [Changes in Version 1.1.1](#changes-in-version-111)
-* [Changes in Version 1.1.0](#changes-in-version-110)
-* [Changes in Version 1.0.0](#changes-in-version-100)
+*   [Changes in Version 1.1.2](#changes-in-version-112)
+*   [Changes in Version 1.1.1](#changes-in-version-111)
+*   [Changes in Version 1.1.0](#changes-in-version-110)
+*   [Changes in Version 1.0.0](#changes-in-version-100)
 
 ----------
+
+## Changes in Version 1.1.2 ##
+
+**Maintenance release to enable command indentation consistent with TSTool 14.6.0.**
+
+**This plugin version requires at least TSTool 14.6.0.**
+
+*   ![change](change.png) [1.1.2] The [`ReadKiWIS`](../command-ref/ReadKiWIS/ReadKiWIS.md) command has been updated:
+    +   The command can be indented in command files as per TSTool 14.6.0 conventions.
 
 ## Changes in Version 1.1.1 ##
 
