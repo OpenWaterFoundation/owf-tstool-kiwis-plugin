@@ -1,5 +1,5 @@
-# results
+# results #
 
 This folder contains the results of running the test suite.
-Everything is ignored in the repository except this file.
+Everything is ignored in the repository except this file and the `.gitignore` file.
 This file ensures that this otherwise empty folder is committed to the repository.
