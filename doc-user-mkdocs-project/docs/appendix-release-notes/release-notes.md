@@ -1,13 +1,50 @@
 # TSTool / KiWIS Data Web Services Plugin / Release Notes #
 
-*   [Changes in Version 1.1.2](#changes-in-version-112)
-*   [Changes in Version 1.1.1](#changes-in-version-111)
-*   [Changes in Version 1.1.0](#changes-in-version-110)
-*   [Changes in Version 1.0.0](#changes-in-version-100)
+Release notes are available for the core TSTool product and plugin.
+The core software and plugins are maintained separately and may be updated at different times.
+
+*   [TSTool core product release notes](http://opencdss.state.co.us/tstool/latest/doc-user/appendix-release-notes/release-notes/).
+*   [TSTool Version Compatibility](#tstool-version-compatibility)
+*   [Release Note Details](#release-note-details)
+
+----
+
+## TSTool Version Compatibility ##
+
+The following table lists TSTool and plugin software version compatibility.
+
+**<p style="text-align: center;">
+TSTool and Plugin Version Compatibility
+</p>**
+
+| **Plugin Version** | **Required TSTool Version** | **Comments** |
+| -- | -- | -- |
+| 2.0.0 | >=  15.0.0 | TSTool and plugin updated to Java 11, new plugin manager. |
+| 1.1.2 | >= 14.6.0 | |
+| 1.1.1 | >= 14.5.4 | |
+| 1.1.0 | >= 14.5.3 | |
+
+## Release Note Details ##
+
+*   [Version 2.0.0](#version-200)
+*   [Version 1.1.2](#version-112)
+*   [Version 1.1.1](#version-111)
+*   [Version 1.1.0](#version-110)
+*   [Version 1.0.0](#version-100)
 
 ----------
 
-## Changes in Version 1.1.2 ##
+## Version 2.0.0 ##
+
+**Major release to use Java 11.**
+
+*   ![change](change.png) Update the plugin to use Java 11:
+    +   The Java version is consistent with TSTool 15.0.0.
+    *   The plugin installation now uses a version folder,
+        which allows multiple versions of the plugin to be installed at the same time,
+        for use with different versions of TSTool.
+
+## Version 1.1.2 ##
 
 **Maintenance release to enable command indentation consistent with TSTool 14.6.0.**
 
@@ -16,7 +53,7 @@
 *   ![change](change.png) [1.1.2] The [`ReadKiWIS`](../command-ref/ReadKiWIS/ReadKiWIS.md) command has been updated:
     +   The command can be indented in command files as per TSTool 14.6.0 conventions.
 
-## Changes in Version 1.1.1 ##
+## Version 1.1.1 ##
 
 **Maintenance release to fix issues discovered during testing.**
 
@@ -30,7 +67,7 @@
     (single quotes around the first part) resulted in errors.  This has been fixed.
     **This requires updating to at least TSTool 14.5.4.**
 
-## Changes in Version 1.1.0 ##
+## Version 1.1.0 ##
 
 **Feature release - enable features including up to daily interval.**
 
@@ -59,7 +96,7 @@
         control of how to handle zero hour midnight for dates and dates with time.
         The output time series TSID will reflect the parameter.
 
-## Changes in Version 1.0.0 ##
+## Version 1.0.0 ##
 
 **Feature release - initial production release.**
 

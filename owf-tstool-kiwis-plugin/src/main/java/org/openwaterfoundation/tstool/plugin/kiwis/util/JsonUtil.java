@@ -26,8 +26,6 @@ import java.util.Map;
 
 /**
  * JSON utilities.
- * @author sam
- *
  */
 public class JsonUtil {
 
@@ -42,21 +40,21 @@ public class JsonUtil {
 	 * @return the individual object string or null if the object does not exist in the input string.
 	 */
 	public static String extractObjectString ( String jsonString, String objectName, boolean includeName ) {
-		// Find the object in the string
+		// Find the object in the string.
 		int posName = jsonString.indexOf ( "\"" + objectName + "\"" );
 		int len = jsonString.length();
 		if ( posName < 0 ) {
 			return null;
 		}
 		// Have a the location of the object name.
-		// Find the colon
+		// Find the colon.
 		int posStart = jsonString.indexOf ( ":", posName);
-		// Determine the object-bounding character, either [ or {
+		// Determine the object-bounding character, either [ or { // } to match.
 		boolean objectIsArray = false;
 		boolean bracketFound = false;
 		char c;
 		int i;
-		posStart = posStart + 1; // Increment past colon
+		posStart = posStart + 1; // Increment past colon.
 		for ( i = posStart; i < len; i++ ) {
 			c = jsonString.charAt(i);
 			if ( c == '[' ) {
@@ -64,17 +62,17 @@ public class JsonUtil {
 				bracketFound = true;
 				break;
 			}
-			else if ( c == '{' ) {
+			else if ( c == '{' ) {  // } to match.
 				objectIsArray = false;
 				bracketFound = true;
 				break;
 			}
 		}
 		if ( !bracketFound ) {
-			// Something wrong with the JSON
+			// Something wrong with the JSON.
 			return null;
 		}
-		// Search for the matching bracket, starting from previous character in the string
+		// Search for the matching bracket, starting from previous character in the string:
 		// - increment bracket count until the bracket open and close counts are equal
 		int bracketOpenCount = 1;
 		int bracketCloseCount = 0;
@@ -82,7 +80,7 @@ public class JsonUtil {
 		for ( i = (i + 1); i < len; i++ ) {
 			c = jsonString.charAt(i);
 			if ( c == '\\' ) {
-				// Have an escape character so increment just to make sure brackets are not counted
+				// Have an escape character so increment just to make sure brackets are not counted.
 				++i;
 				continue;
 			}
@@ -99,13 +97,13 @@ public class JsonUtil {
 				++bracketCloseCount;
 			}
 			if ( bracketOpenCount == bracketCloseCount ) {
-				// Have matched the ending bracket
+				// Have matched the ending bracket.
 				posEnd = i;
 				break;
 			}
 		}
 		if ( posEnd > 0 ) {
-			// Found the closing bracket
+			// Found the closing bracket.
 			if ( includeName ) {
 				return jsonString.substring(posName, (posEnd + 1)).trim();
 			}
@@ -114,7 +112,7 @@ public class JsonUtil {
 			}
 		}
 		else {
-			// Did not find the closing bracket
+			// Did not find the closing bracket.
 			return null;
 		}
 	}
@@ -126,6 +124,7 @@ public class JsonUtil {
 	 * @param allowNull if true, return null if the name is not found
 	 */
 	public static <T> T getFromMap ( Map<String,Object> map, String [] names, boolean allowNull ) {
+		// TODO smalers 2025-03-24 why does Eclipse say that i++ is dead code?
 		for ( int i = 0; i < names.length; i++ ) {
 			Object o = map.get(names[i]);
 			if ( o == null ) {
@@ -133,7 +132,7 @@ public class JsonUtil {
 					return null;
 				}
 				else {
-					throw new RuntimeException ( "Map does not contain key and null not allowed" );
+					throw new RuntimeException ( "Map does not contain key and null not allowed." );
 				}
 			}
 			else {
