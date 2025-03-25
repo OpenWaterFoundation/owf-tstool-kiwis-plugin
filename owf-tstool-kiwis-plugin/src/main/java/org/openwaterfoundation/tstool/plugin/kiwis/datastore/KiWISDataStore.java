@@ -827,7 +827,7 @@ public class KiWISDataStore extends AbstractWebServiceDataStore implements DataS
    		if ( key == null) {
    			return "";
    		}
-   		Integer keyInt = new Integer(key);
+   		Integer keyInt = Integer.valueOf(key);
     	Integer key2;
     	for ( QualityCode qualityCode : qualityCodeList ) {
     		key2 = qualityCode.getKey();
@@ -1181,7 +1181,7 @@ public class KiWISDataStore extends AbstractWebServiceDataStore implements DataS
     	if ( locType.equalsIgnoreCase("ts_id") ) {
     		// KiWIS ts_id uniquely identifies the time series:
     		// - the location is like ts_id:ts_id  (where first 5 characters are 'ts_id:'
-    		kiwisTsid = new Integer(tsidentReq.getMainLocation());
+    		kiwisTsid = Integer.valueOf(tsidentReq.getMainLocation());
     		// Read the time series list for the single time series.
     		String dataTypeReq = null;
     		String dataIntervalReq = null;
@@ -1674,11 +1674,11 @@ public class KiWISDataStore extends AbstractWebServiceDataStore implements DataS
     		}
     		
     		// Set additional time series properties to help understand the data.
-    		ts.setProperty("ts.TimestampsAdjustedToIntervalEndCount", new Integer(timeAdjustCount));
-    		ts.setProperty("ts.DayNonZeroHourCount", new Integer(dayNonZeroHourCount));
-    		ts.setProperty("ts.NotInsertedCount", new Integer(notInsertedCount));
+    		ts.setProperty("ts.TimestampsAdjustedToIntervalEndCount", Integer.valueOf(timeAdjustCount));
+    		ts.setProperty("ts.DayNonZeroHourCount", Integer.valueOf(dayNonZeroHourCount));
+    		ts.setProperty("ts.NotInsertedCount", Integer.valueOf(notInsertedCount));
     		ts.setProperty("ts.GetTimeSeriesValuesUrl", valuesUrl.toString());
-    		ts.setProperty("ts.SetDataValueErrorCount", new Integer(valueErrorCount));
+    		ts.setProperty("ts.SetDataValueErrorCount", Integer.valueOf(valueErrorCount));
     		
     		// In order to avoid confusion, throw exceptions for cases that may be misinterpreted.
     		if ( (intervalBaseReq == TimeInterval.DAY) && (intervalMultReq == 1) && (dayNonZeroHourCount > 0)) {
@@ -1838,10 +1838,10 @@ public class KiWISDataStore extends AbstractWebServiceDataStore implements DataS
 			tscatalog.setDataUnits(timeSeries.getTsUnitSymbol()); // Symbol = abbreviation?
 
 			// Standard and additional properties returned by the web service (see 'returnFields').
-			tscatalog.setCatchmentId( (timeSeries.getCatchmentId() == null) ? null : new Integer(timeSeries.getCatchmentId()));
+			tscatalog.setCatchmentId( (timeSeries.getCatchmentId() == null) ? null : Integer.valueOf(timeSeries.getCatchmentId()));
 			tscatalog.setCatchmentName(timeSeries.getCatchmentName());
 
-			tscatalog.setStationId( (timeSeries.getStationId() == null) ? null : new Integer(timeSeries.getStationId()));
+			tscatalog.setStationId( (timeSeries.getStationId() == null) ? null : Integer.valueOf(timeSeries.getStationId()));
 			tscatalog.setStationLongName(timeSeries.getStationLongName());
 			tscatalog.setStationLatitude(timeSeries.getStationLatitude());
 			tscatalog.setStationLongitude(timeSeries.getStationLongitude());
@@ -1852,19 +1852,19 @@ public class KiWISDataStore extends AbstractWebServiceDataStore implements DataS
 			tscatalog.setStationParameterName(timeSeries.getStationParameterName());
 			tscatalog.setStationParameterNo(timeSeries.getStationParameterNo());
 
-			tscatalog.setSiteId( (timeSeries.getSiteId() == null) ? null : new Integer(timeSeries.getSiteId()));
+			tscatalog.setSiteId( (timeSeries.getSiteId() == null) ? null : Integer.valueOf(timeSeries.getSiteId()));
 			tscatalog.setSiteName(timeSeries.getSiteName());
 			tscatalog.setSiteNo(timeSeries.getSiteNo());
 			
-			tscatalog.setParameterTypeId( (timeSeries.getParameterTypeId() == null) ? null : new Integer(timeSeries.getParameterTypeId()));
+			tscatalog.setParameterTypeId( (timeSeries.getParameterTypeId() == null) ? null : Integer.valueOf(timeSeries.getParameterTypeId()));
 			tscatalog.setParameterTypeName(timeSeries.getParameterTypeName());
 
-			tscatalog.setTsId( (timeSeries.getTsId() == null) ? null : new Integer(timeSeries.getTsId()));
+			tscatalog.setTsId( (timeSeries.getTsId() == null) ? null : Integer.valueOf(timeSeries.getTsId()));
 			tscatalog.setTsName(timeSeries.getTsName());
 			tscatalog.setTsPath(timeSeries.getTsPath());
 			tscatalog.setTsShortName(timeSeries.getTsShortName());
 			tscatalog.setTsSpacing(timeSeries.getTsSpacing());
-			tscatalog.setTsTypeId( (timeSeries.getTsTypeId() == null) ? null : new Integer(timeSeries.getTsTypeId()));
+			tscatalog.setTsTypeId( (timeSeries.getTsTypeId() == null) ? null : Integer.valueOf(timeSeries.getTsTypeId()));
 			tscatalog.setTsTypeName(timeSeries.getTsTypeName());
 			tscatalog.setTsUnitName(timeSeries.getTsUnitName());
 			tscatalog.setTsUnitNameAbs(timeSeries.getTsUnitNameAbs());
