@@ -91,6 +91,7 @@ getPluginVersion() {
     # Don't echo error to stdout.
     echoStderr "[ERROR] Source file with version does not exist:"
     echoStderr "[ERROR]   ${srcFile}"
+    # Output an empty string as the version.
     echo ""
   fi
 }
