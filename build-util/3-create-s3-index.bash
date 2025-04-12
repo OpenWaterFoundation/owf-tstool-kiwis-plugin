@@ -606,7 +606,6 @@ uploadIndexFiles() {
   else
     ${awsExe} cloudfront create-invalidation --distribution-id "${cloudFrontDistributionId}" --paths '/tstool-kiwis-plugin/index.html' '/tstool-kiwis-plugin/' '/tstool-kiwis-plugin' "/tstool-kiwis-plugin/${indexFaviconFile}" --output json --profile "${awsProfile}" | tee ${tmpFile}
   fi
-  invalidationId=$(cat ${tmpFile} | grep '"Id":' | cut -d ':' -f 2 | tr -d ' ' | tr -d '"' | tr -d ',')
   errorCode=${PIPESTATUS[0]}
   if [ ${errorCode} -ne 0 ]; then
     logError " "
@@ -615,6 +614,7 @@ uploadIndexFiles() {
   else
     logInfo "Success invalidating CloudFront file(s)."
     # Now wait on the invalidation.
+    invalidationId=$(cat ${tmpFile} | grep '"Id":' | cut -d ':' -f 2 | tr -d ' ' | tr -d '"' | tr -d ',')
     waitOnInvalidation ${cloudFrontDistributionId} ${invalidationId}
   fi
 
