@@ -34,7 +34,7 @@ public class KiWIS_TimeSeries_CellRenderer extends JWorksheet_AbstractExcelCellR
 
 	/**
 	Constructor.
-	@param tableModel The TSTool_ReclamationPisces_TableModel to render.
+	@param tableModel The KiWIS_TimeSeries_TableModel to render.
 	*/
 	public KiWIS_TimeSeries_CellRenderer ( KiWIS_TimeSeries_TableModel tableModel ) {
 		this.tableModel = tableModel;
